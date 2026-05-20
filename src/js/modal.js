@@ -45,24 +45,6 @@ window.onclick = (e) => {
     all_none();
 };
 
-
-// Clicking on a cross hide everything
-CROSS_1.onclick = all_none;
-CROSS_2.onclick = all_none;
-CROSS_3.onclick = all_none;
-CROSS_4.onclick = all_none;
-
-
-// Display connection modal
-BUTTON_CONNECT.onclick =  () => {
-  MODAL.style.display = "block";
-  MODAL_CONNECT.style.display = "flex";
-  USERNAME[0].value ='';
-  PASSWORD[0].value ='';
-  ERROR[1].innerHTML="";
-}
-
-
 // Display register modal
 BUTTON_REGISTER.onclick = () => {
   MODAL_CONNECT.style.display = "none";

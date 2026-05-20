@@ -41,7 +41,24 @@ if ($method == 'GET'){
 
 // POST REQUEST
 else if ($method == 'POST'){
+  if ($ressource === 'login') {
+    $username = $_POST['username'] ?? '';
+    $password = $_POST['pwd'] ?? '';
 
+    if ($username === '' || $password === '') {
+      send(['success' => false, 'message' => 'Username et mot de passe requis']);
+      exit();
+    }
+
+    $redirect = get_login_redirect($db, $username, $password);
+    if ($redirect !== null) {
+      send(['success' => true, 'redirect' => $redirect]);
+      exit();
+    }
+
+    send(['success' => false, 'message' => 'Identifiants invalides']);
+    exit();
+  }
 }
 
 

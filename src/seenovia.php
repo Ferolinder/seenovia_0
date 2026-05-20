@@ -13,14 +13,13 @@
   <link rel="icon" type="image/x-icon" href="image/logo.png">
   <link href="css/style.css" rel="stylesheet">
 
-  <script src="js/acceuil.js" defer></script>
   <script src="js/ajax.js" defer></script>
 </head>
 
 <body>
 <?php
   require_once("views/header.php");
-  require_once("views/contentaccueil.php");
+  require_once("views/contentseenovia.php");
   require_once("views/footer.php");
 ?>
 </body>
