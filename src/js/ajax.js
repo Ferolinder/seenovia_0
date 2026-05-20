@@ -18,7 +18,7 @@ function ajax_req(type, url, callback, data = null, error_handler = handle_error
   xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
 
   xhr.onload = () => {
-    console.log(xhr.status)
+    // console.log(xhr.status)
     switch (xhr.status) {
       case 200:
       case 201:
@@ -32,7 +32,6 @@ function ajax_req(type, url, callback, data = null, error_handler = handle_error
 
   xhr.send(data);
 }
-
 
 
 /**
@@ -51,4 +50,16 @@ function handle_error(error){
   };
 
   console.log((error in messages) ? `${error}: ${messages[error]}` : `${error}`);
+}
+
+
+function printf (data) {
+  // ajax_req(
+  //   'GET',
+  //   'php/request.php/test/',
+  //   test,
+  //   '&tab=' + 'crops'
+  // );
+
+  console.log("Response received:", data);
 }

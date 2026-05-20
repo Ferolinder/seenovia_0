@@ -1,6 +1,6 @@
 <div id="home" class="center connection">
   <div id="top">
-    <p>CONNECTION</p>
+    <h1>CONNECTION</h1>
   </div>
   <div class="input">
     <img src="pictures/username.png">

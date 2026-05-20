@@ -1,9 +1,14 @@
+
+
+TRUNCATE TABLE link, spec, crops, users, seenovia RESTART IDENTITY CASCADE;
+
 INSERT INTO users (mdp, nom, prenom, adresseMail, telephone) VALUES
   ('pass123', 'Dupont', 'Jean', 'jean.dupont@example.com', '0612345678'),
   ('secret456', 'Moreau', 'Alice', 'alice.moreau@example.com', '0623456789'),
   ('azerty789', 'Petit', 'Marc', 'marc.petit@example.com', '0634567890'),
   ('qwerty321', 'Leroy', 'Sophie', 'sophie.leroy@example.com', '0645678901'),
-  ('zxcvbn654', 'Roux', 'Lucas', 'lucas.roux@example.com', '0656789012');
+  ('zxcvbn654', 'Roux', 'Lucas', 'lucas.roux@example.com', '0656789012'),
+  ('test', 'test', 'test', 'test@test.com', '0000000000');
 
 INSERT INTO seenovia (mdp, nom, prenom, telephone, adresseMail) VALUES
   ('svpass1', 'Maret', 'Pierre-Antoine', '0616444547', 'pierre-antoine.maret@seenovia.fr'),

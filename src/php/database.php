@@ -1,54 +1,78 @@
 <?php
 ## Place where we put the functions that interact with the database
-require_once('consts.php');
+include_once("consts.php");
 
-/**
- * Create and return a PDO database connection.
- *
- * @return PDO|null
- */
-function db_connect(): ?PDO {
-  $dsn = sprintf('pgsql:host=%s;port=%s;dbname=%s', DB_SERVER, DB_PORT, DB_NAME);
-
-  try {
-    $db = new PDO($dsn, DB_USER, DB_PASSWORD, [
-      PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-      PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-    ]);
-    return $db;
-  } catch (PDOException $exception) {
-    return null;
-  }
+function dbConnect(){ //connexion avec la base de données
+    $dsn = 'pgsql:dbname='.db_name.';host='.db_serveur.';port='.db_port;
+    try {
+        $conn = new PDO($dsn, db_user, db_password);
+        return $conn;
+    } catch (PDOException $e) {
+        echo 'Connexion échouée : ' . $e->getMessage();
+    }
 }
 
-/**
- * Check credentials in users first, then seenovia.
- * Returns the redirect page on success or null on failure.
- *
- * @param PDO $db
- * @param string $username
- * @param string $password
- * @return string|null
- */
-function get_login_redirect(PDO $db, string $username, string $password): ?string {
-  $sql = 'SELECT id FROM users WHERE nom = :username AND mdp = :password LIMIT 1';
-  $stmt = $db->prepare($sql);
-  $stmt->execute([':username' => $username, ':password' => $password]);
+function dbTest($dbb){
+    try {
+        //getting the request data
+        $tab = $_GET['tab'];
 
-  if ($stmt->fetch()) {
-    return 'agri.php';
-  }
+        //request
+        $request = 'SELECT * FROM crops';
+        $statement = $dbb->prepare($request);
 
-  $sql = 'SELECT id FROM seenovia WHERE nom = :username AND mdp = :password LIMIT 1';
-  $stmt = $db->prepare($sql);
-  $stmt->execute([':username' => $username, ':password' => $password]);
+        //binding the datas
+        // $statement->bindParam(':tab', $tab);
 
-  if ($stmt->fetch()) {
-    return 'seenovia.php';
-  }
-
-  return null;
+        //executing
+        $statement->execute();
+        $result = $statement->fetchAll(PDO::FETCH_ASSOC);
+        return $result;
+    }
+    catch (PDOException $e) {
+        print $e;
+        echo "<p id='Error'>Une erreur s'est produite lors de l'exécution de la requête.</p>";
+    }
 }
+
+function dbConnectUser($dbb){
+    try {
+        $mail = $_GET['mail'] ?? '';
+        $mdp = $_GET['mdp'] ?? '';
+
+        $request = 'SELECT id FROM users WHERE adresseMail = :mail AND mdp = :mdp LIMIT 1';
+        $statement = $dbb->prepare($request);
+        $statement->bindParam(':mail', $mail);
+        $statement->bindParam(':mdp', $mdp);
+        $statement->execute();
+
+        $id = $statement->fetchColumn();
+        return $id !== false ? (int) $id : 0;
+    }
+    catch (PDOException $e) {
+        return "e0";
+    }
+}
+
+function dbConnectSeenovia($dbb){
+    try {
+        $mail = $_GET['mail'] ?? '';
+        $mdp = $_GET['mdp'] ?? '';
+
+        $request = 'SELECT 1 FROM seenovia WHERE adresseMail = :mail AND mdp = :mdp LIMIT 1';
+        $statement = $dbb->prepare($request);
+        $statement->bindParam(':mail', $mail);
+        $statement->bindParam(':mdp', $mdp);
+        $statement->execute();
+
+        $exists = $statement->fetchColumn();
+        return $exists !== false ? true : 0;
+    }
+    catch (PDOException $e) {
+        return "e0";
+    }
+}
+
 
 ?>
 

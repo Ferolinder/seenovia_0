@@ -1,0 +1,21 @@
+{
+    "sqltools.connections": [
+        {
+            "ssh": "Disabled",
+            "previewLimit": 50,
+            "server": "localhost",
+            "port": 5432,
+            "askForPassword": true,
+            "sshOptions": {
+                "port": 22,
+                "host": "127.0.0.1",
+                "username": "isen",
+                "password": "Isen44N"
+            },
+            "driver": "PostgreSQL",
+            "database": "seenovia",
+            "username": "seenovia_user",
+            "name": "seenovia"
+        }
+    ]
+}

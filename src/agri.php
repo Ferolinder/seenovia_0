@@ -9,16 +9,19 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Accueil</title>
-  <link rel="icon" type="image/x-icon" href="image/logo.png">
+  <title>Agri</title>
+  <link rel="icon" type="images/x-icon" href="pictures/logo.png">
+
   <link href="css/style.css" rel="stylesheet">
 
   <script src="js/ajax.js" defer></script>
+  <!-- <script src="js/agri.js" defer></script> -->
 </head>
 
 <body>
 <?php
-  require_once("views/header.php");
+  require_once("views/header.php");+
+
   require_once("views/footer.php");
 ?>
 </body>

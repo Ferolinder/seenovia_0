@@ -1,10 +1,11 @@
-'use strict';
-
-// Fetch some elements from the DOM
+// DOM ELEMENT 
 const CONNECT = document.getElementById("buttonConnect");
 
 const USERNAME = document.getElementsByClassName("username");
 const PASSWORD = document.getElementsByClassName("password");
+
+
+// FUNCTION
 
 CONNECT.onclick = () => {
   let invalid = false;
@@ -22,25 +23,60 @@ CONNECT.onclick = () => {
     return;
   }
 
-  // Else submit request
   ajax_req(
-    'POST',
-    'php/request.php/login/', 
-    is_login, 
-    `username=${encodeURIComponent(USERNAME[0].value)}&&pwd=${encodeURIComponent(PASSWORD[0].value)}`
+    'GET',
+    'php/request.php/account/',
+    reactConnect,
+    '&mail=' + USERNAME[0].value + '&mdp=' + PASSWORD[0].value
   );
-  console.log("Request sent");
 }
 
-
-function is_login(response) {
-  if (response.success && response.redirect) {
-    window.location.href = response.redirect;
+function reactConnect(data) {
+  if (data === 0 || data === '0') {
+    showTemporaryModal('erreur dans la connection, vérifiez votre mail et mot de passe', 1000);
     return;
   }
 
-  const errorElement = document.querySelector(".error");
-  errorElement.textContent = response.message || "Login failed";
-  errorElement.classList.add("visible");
-  setTimeout(() => errorElement.classList.remove("visible"), 3000);
+  if (data === true || data === 'true') {
+    openPageSeenovia();
+    return;
+  }
+
+  const numericId = Number(data);
+  if (!Number.isNaN(numericId) && numericId > 1) {
+    openPageAgri(numericId);
+    return;
+  }
+
+  showTemporaryModal('erreur dans la connection, vérifiez votre mail et mot de passe', 1000);
+}
+
+function openPageAgri(data) {
+  window.location.href = `agri.php?user=${encodeURIComponent(data)}`;
+}
+
+function openPageSeenovia() {
+  window.location.href = 'seenovia.php';
+}
+
+function showTemporaryModal(message, duration) {
+  const modal = document.createElement('div');
+  modal.classList.add('temporary-modal');
+  modal.textContent = message;
+  document.body.appendChild(modal);
+
+  setTimeout(() => {
+    modal.remove();
+  }, duration);
+}
+
+function printf(data) {
+  // ajax_req(
+  //   'GET',
+  //   'php/request.php/test/',
+  //   test,
+  //   '&tab=' + 'crops'
+  // );
+
+  console.log("Response received:", data);
 }
