@@ -1,11 +1,33 @@
 // DOM ELEMENT 
 const CONNECT = document.getElementById("buttonConnect");
+const TOGGLE_PASSWORD = document.getElementById("togglePassword");
 
 const USERNAME = document.getElementsByClassName("username");
 const PASSWORD = document.getElementsByClassName("password");
 
 
 // FUNCTION
+
+// Toggle password visibility using images
+if (TOGGLE_PASSWORD) {
+  TOGGLE_PASSWORD.addEventListener('click', (e) => {
+    e.preventDefault();
+    const passwordInput = PASSWORD[0];
+    const icon = TOGGLE_PASSWORD.querySelector('.toggle-icon');
+    if (!passwordInput) return;
+    if (passwordInput.type === 'password') {
+      try {
+        passwordInput.type = '';
+      } catch (err) {
+        passwordInput.type = 'text';
+      }
+      if (icon) icon.src = 'pictures/eye.png';
+    } else {
+      passwordInput.type = 'password';
+      if (icon) icon.src = 'pictures/hidden.png';
+    }
+  });
+}
 
 CONNECT.onclick = () => {
   let invalid = false;

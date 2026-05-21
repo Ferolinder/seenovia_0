@@ -31,14 +31,16 @@ switch($req){
       }
       case "account" : {
         $result = dbConnectUser($db);
-        if($result == "e0"){
-          $result = dbConnectSeenovia($db);
-        }
         echo json_encode($result);
         break;
       }
       case "data_agri" : {
         $result = dbDataAgri($db);
+        echo json_encode($result);
+        break;
+      }
+      case "data_agri_all" : {
+        $result = dbDataAgriAll($db);
         echo json_encode($result);
         break;
       }

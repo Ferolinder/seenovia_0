@@ -1,6 +1,5 @@
 
 DROP TABLE IF EXISTS users CASCADE;
-DROP TABLE IF EXISTS seenovia CASCADE;
 DROP TABLE IF EXISTS crops CASCADE;
 DROP TABLE IF EXISTS spec CASCADE;
 DROP TABLE IF EXISTS link CASCADE;
@@ -12,17 +11,8 @@ CREATE TABLE users (
   nom         VARCHAR(64) NOT NULL,
   prenom      VARCHAR(64) NOT NULL,
   adresseMail VARCHAR(64),
-  telephone   VARCHAR(64)
-);
-
--- Table seenovia
-CREATE TABLE seenovia (
-    id          SERIAL PRIMARY KEY,
-    mdp         VARCHAR(64) NOT NULL,
-    nom         VARCHAR(64) NOT NULL,
-    prenom      VARCHAR(64) NOT NULL,
-    telephone   VARCHAR(64) NOT NULL,
-    adresseMail VARCHAR(64) NOT NULL
+  telephone   VARCHAR(64),
+  admin       BOOLEAN DEFAULT FALSE
 );
 
 -- Table crops

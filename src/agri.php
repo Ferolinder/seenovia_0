@@ -18,7 +18,7 @@
   <script src="js/agri.js" defer></script>
 </head>
 
-<body>
+<body class="page-agri">
 <?php
   require_once("views/header.php");
   require_once("views/contentagri.php");

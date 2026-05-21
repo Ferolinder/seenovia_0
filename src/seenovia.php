@@ -14,6 +14,7 @@
   <link href="css/style.css" rel="stylesheet">
 
   <script src="js/ajax.js" defer></script>
+  <script src="js/seenovia.js" defer></script>
 </head>
 
 <body>

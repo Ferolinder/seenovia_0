@@ -171,6 +171,30 @@ footer div#footer a:hover {
   color: #ffdddd;
 }
 
+.toggle-password {
+  background: none;
+  border: none;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.toggle-password .toggle-icon {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  opacity: 0.9;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.toggle-password:hover .toggle-icon {
+  opacity: 1;
+  transform: translateY(-1px);
+}
+
 .button-modal {
   display: inline-flex;
   align-items: center;
@@ -233,12 +257,12 @@ footer div#footer a:hover {
   font-size: 1.35rem;
 }
 
-#agriGreetingSection {
+#GreetingSection {
   padding: 1rem 1.5rem;
   background: rgba(96, 112, 99, 0.08);
 }
 
-#agriGreeting {
+#Greeting {
   margin: 0;
   color: #264d3c;
   font-size: 2rem;
@@ -332,6 +356,32 @@ footer div#footer a:hover {
   font-weight: 600;
 }
 
+/* Seenovia admin list styles */
+.seenovia-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+}
+
+.seenovia-user {
+  background: rgba(255,255,255,0.03);
+  padding: 1rem;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.04);
+}
+
+.seenovia-user-title {
+  margin: 0 0 0.5rem 0;
+  font-size: 1rem;
+  color: #607063;
+}
+
+@media (max-width: 900px) {
+  .seenovia-list {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 900px) {
   #agriPage {
     padding: 1rem;
@@ -354,19 +404,15 @@ body.page-agri {
 }
 
 body.page-agri header {
-  flex: 0 0 20vh;
-  max-height: 20vh;
-  overflow: hidden;
+  flex: 0 0 auto;
 }
 
 body.page-agri #agriPage {
-  flex: 0 0 60vh;
-  min-height: 60vh;
+  flex: 1 1 auto;
+  min-height: 0;
   overflow: auto;
 }
 
 body.page-agri footer {
-  flex: 0 0 20vh;
-  max-height: 20vh;
-  overflow: hidden;
+  flex: 0 0 auto;
 }

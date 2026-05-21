@@ -1,6 +1,6 @@
 <section id="agriPage">
-  <section id="agriGreetingSection" class="agri-section">
-    <h1 id="agriGreeting" class="agri-greeting">Bonjour agriculteur</h1>
+  <section id="GreetingSection" class="agri-section">
+    <h1 id="agriGreeting" class="greeting">Bonjour agriculteur</h1>
   </section>
 
   <section id="agriControls" class="agri-section agri-controls">
