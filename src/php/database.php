@@ -73,6 +73,105 @@ function dbConnectSeenovia($dbb){
     }
 }
 
+function dbDataAgri($dbb){
+    try {
+        $id_user = $_GET['id_user'] ?? 0;
+        if (!$id_user) {
+            return [];
+        }
+
+        $dbb->beginTransaction();
+
+        $cropStmt = $dbb->query('SELECT id FROM crops');
+        $cropIds = $cropStmt->fetchAll(PDO::FETCH_COLUMN);
+
+        $findLinkStmt = $dbb->prepare('SELECT id, spec_id FROM link WHERE user_id = :user_id AND crop_id = :crop_id');
+        $insertSpecStmt = $dbb->prepare('INSERT INTO spec (surface, engrais, phyto, A, B, C) VALUES (0, 0, 0, 0, 0, 0) RETURNING id');
+        $insertLinkStmt = $dbb->prepare('INSERT INTO link (spec_id, crop_id, user_id) VALUES (:spec_id, :crop_id, :user_id)');
+        $updateLinkStmt = $dbb->prepare('UPDATE link SET spec_id = :spec_id WHERE id = :link_id');
+
+        foreach ($cropIds as $cropId) {
+            $findLinkStmt->execute([
+                ':user_id' => $id_user,
+                ':crop_id' => $cropId
+            ]);
+            $link = $findLinkStmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$link) {
+                $insertSpecStmt->execute();
+                $spec_id = $insertSpecStmt->fetchColumn();
+                $insertLinkStmt->execute([
+                    ':spec_id' => $spec_id,
+                    ':crop_id' => $cropId,
+                    ':user_id' => $id_user
+                ]);
+            } elseif (empty($link['spec_id'])) {
+                $insertSpecStmt->execute();
+                $spec_id = $insertSpecStmt->fetchColumn();
+                $updateLinkStmt->execute([
+                    ':spec_id' => $spec_id,
+                    ':link_id' => $link['id']
+                ]);
+            }
+        }
+
+        $dbb->commit();
+
+        $request = 'SELECT u.nom AS user_nom, u.prenom AS user_prenom, link.*, spec.surface, spec.engrais, spec.phyto, spec.A, spec.B, spec.C, crops.nom AS crop_nom FROM link JOIN users u ON link.user_id = u.id JOIN spec ON link.spec_id = spec.id JOIN crops ON link.crop_id = crops.id WHERE link.user_id = :id_user ORDER BY crops.id';
+        $statement = $dbb->prepare($request);
+        $statement->bindParam(':id_user', $id_user, PDO::PARAM_INT);
+        $statement->execute();
+        $result = $statement->fetchAll(PDO::FETCH_ASSOC);
+        return $result;
+    }
+    catch (PDOException $e) {
+        if ($dbb->inTransaction()) {
+            $dbb->rollBack();
+        }
+        print $e;
+        echo "<p id='Error'>Une erreur s'est produite lors de l'exécution de la requête.</p>";
+    }
+}
+
+function dbUpdateAgri($dbb){
+    try {
+        $updates = $_POST['updates'] ?? '';
+        if (!$updates) {
+            return ['error' => 'Aucune donnée à mettre à jour.'];
+        }
+
+        $rows = json_decode($updates, true);
+        if (!is_array($rows)) {
+            return ['error' => 'Format de données invalide.'];
+        }
+
+        $statement = $dbb->prepare('UPDATE spec SET surface = :surface, engrais = :engrais, phyto = :phyto, A = :A, B = :B, C = :C WHERE id = :spec_id');
+        $updated = 0;
+
+        foreach ($rows as $row) {
+            if (empty($row['spec_id'])) {
+                continue;
+            }
+
+            $statement->execute([
+                ':surface' => $row['surface'] !== null ? $row['surface'] : 0,
+                ':engrais' => $row['engrais'] !== null ? $row['engrais'] : 0,
+                ':phyto' => $row['phyto'] !== null ? $row['phyto'] : 0,
+                ':A' => $row['A'] !== null ? $row['A'] : 0,
+                ':B' => $row['B'] !== null ? $row['B'] : 0,
+                ':C' => $row['C'] !== null ? $row['C'] : 0,
+                ':spec_id' => $row['spec_id']
+            ]);
+
+            $updated += $statement->rowCount();
+        }
+
+        return ['success' => true, 'updated' => $updated, 'message' => "$updated ligne(s) mises à jour."];
+    }
+    catch (PDOException $e) {
+        return ['error' => 'Erreur lors de la mise à jour des données.'];
+    }
+}
 
 ?>
 

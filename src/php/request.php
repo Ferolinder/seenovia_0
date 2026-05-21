@@ -37,6 +37,11 @@ switch($req){
         echo json_encode($result);
         break;
       }
+      case "data_agri" : {
+        $result = dbDataAgri($db);
+        echo json_encode($result);
+        break;
+      }
       default : {
         echo json_encode(['error' => 'Ressource GET non définie: ' . $requestRessource]);
       }
@@ -45,11 +50,32 @@ switch($req){
   }
     
   case "POST" : {
+    switch($requestRessource){
+      case "datas" : {
+        break;
+      }
+      case "update_agri" : {
+        $result = dbUpdateAgri($db);
+        echo json_encode($result);
+        break;
+      }
+      default : {
+        echo json_encode(['error' => 'Ressource POST non définie: ' . $requestRessource]);
+      }
+    }
     break;
   }           
       
   case "PUT" : {
     parse_str(file_get_contents('php://input'), $_PUT);
+    switch($requestRessource){
+      case "datas" : {
+        break;
+      }
+      default : {
+        echo json_encode(['error' => 'Ressource PUT non définie: ' . $requestRessource]);
+      }
+    }
     break;
   }
         

@@ -15,13 +15,13 @@
   <link href="css/style.css" rel="stylesheet">
 
   <script src="js/ajax.js" defer></script>
-  <!-- <script src="js/agri.js" defer></script> -->
+  <script src="js/agri.js" defer></script>
 </head>
 
 <body>
 <?php
-  require_once("views/header.php");+
-
+  require_once("views/header.php");
+  require_once("views/contentagri.php");
   require_once("views/footer.php");
 ?>
 </body>

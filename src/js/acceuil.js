@@ -32,8 +32,8 @@ CONNECT.onclick = () => {
 }
 
 function reactConnect(data) {
-  if (data === 0 || data === '0') {
-    showTemporaryModal('erreur dans la connection, vérifiez votre mail et mot de passe', 1000);
+  if (data === 0 || data === 'e0') {
+    alert('erreur dans la connection, vérifiez votre mail et mot de passe');
     return;
   }
 
@@ -48,7 +48,7 @@ function reactConnect(data) {
     return;
   }
 
-  showTemporaryModal('erreur dans la connection, vérifiez votre mail et mot de passe', 1000);
+  
 }
 
 function openPageAgri(data) {
@@ -57,17 +57,6 @@ function openPageAgri(data) {
 
 function openPageSeenovia() {
   window.location.href = 'seenovia.php';
-}
-
-function showTemporaryModal(message, duration) {
-  const modal = document.createElement('div');
-  modal.classList.add('temporary-modal');
-  modal.textContent = message;
-  document.body.appendChild(modal);
-
-  setTimeout(() => {
-    modal.remove();
-  }, duration);
 }
 
 function printf(data) {
