@@ -2,8 +2,15 @@
 const modifyAllBtn = document.getElementById('modifyAllBtn');
 const saveAllBtn = document.getElementById('saveAllBtn');
 const downloadSvgBtn = document.getElementById('downloadSvgBtn');
+const createAgriUserBtn = document.getElementById('createAgriUserBtn');
 const seenoviaList = document.getElementById('seenoviaList');
 const feedbackBox = document.getElementById('seenoviaFeedback');
+
+// Modal elements
+const createAgriUserModal = document.getElementById('createAgriUserModal');
+const createAgriUserForm = document.getElementById('createAgriUserForm');
+const modalCloseBtn = document.querySelector('.modal-close');
+const createAgriUserError = document.getElementById('createAgriUserError');
 
 let editMode = false;
 const visibleColumns = ['crop_nom', 'surface', 'engrais', 'phyto', 'A', 'B', 'C'];
@@ -20,6 +27,12 @@ const columnLabels = {
 if (modifyAllBtn) modifyAllBtn.addEventListener('click', () => setEditMode(true));
 if (saveAllBtn) saveAllBtn.addEventListener('click', saveAllData);
 if (downloadSvgBtn) downloadSvgBtn.addEventListener('click', downloadSvg);
+if (createAgriUserBtn) createAgriUserBtn.addEventListener('click', openCreateAgriUserModal);
+if (modalCloseBtn) modalCloseBtn.addEventListener('click', closeCreateAgriUserModal);
+if (createAgriUserModal) createAgriUserModal.addEventListener('click', (e) => {
+  if (e.target === createAgriUserModal) closeCreateAgriUserModal();
+});
+if (createAgriUserForm) createAgriUserForm.addEventListener('submit', handleCreateAgriUserSubmit);
 
 document.addEventListener('DOMContentLoaded', () => {
     // load all data (non-admin users)
@@ -173,4 +186,65 @@ function downloadSvg() {
     a.click();
     a.remove();
     URL.revokeObjectURL(url);
+}
+
+// Functions for creating agri user modal
+function openCreateAgriUserModal() {
+    if (createAgriUserModal) {
+        createAgriUserModal.classList.add('active');
+        createAgriUserForm.reset();
+        if (createAgriUserError) createAgriUserError.textContent = '';
+    }
+}
+
+function closeCreateAgriUserModal() {
+    if (createAgriUserModal) {
+        createAgriUserModal.classList.remove('active');
+        createAgriUserForm.reset();
+        if (createAgriUserError) createAgriUserError.textContent = '';
+    }
+}
+
+function handleCreateAgriUserSubmit(e) {
+    e.preventDefault();
+    
+    if (createAgriUserError) createAgriUserError.textContent = '';
+    
+    const formData = new FormData(createAgriUserForm);
+    const data = Object.fromEntries(formData);
+    
+    // Validation
+    if (!data.nom || !data.nom.trim()) {
+        if (createAgriUserError) createAgriUserError.textContent = 'Le nom est requis.';
+        return;
+    }
+    if (!data.prenom || !data.prenom.trim()) {
+        if (createAgriUserError) createAgriUserError.textContent = 'Le prénom est requis.';
+        return;
+    }
+    if (!data.adresseMail || !data.adresseMail.trim()) {
+        if (createAgriUserError) createAgriUserError.textContent = 'L\'email est requis.';
+        return;
+    }
+    if (!data.mdp || !data.mdp.trim()) {
+        if (createAgriUserError) createAgriUserError.textContent = 'Le mot de passe est requis.';
+        return;
+    }
+    
+    // Send data
+    ajax_req('POST', 'php/request.php/create_agri_user/', handleCreateAgriUserResponse, 'userData=' + encodeURIComponent(JSON.stringify(data)));
+}
+
+function handleCreateAgriUserResponse(data) {
+    if (!data || data.error) {
+        if (createAgriUserError) createAgriUserError.textContent = data && data.error ? data.error : 'Erreur lors de la création du compte.';
+        return;
+    }
+    if (feedbackBox) {
+        feedbackBox.textContent = data.message || 'Compte agri créé avec succès.';
+        feedbackBox.style.color = '#607063';
+    }
+    closeCreateAgriUserModal();
+    // Reload data
+    ajax_req('GET', 'php/request.php/data_agri_all/', reactDataAll, '');
 }

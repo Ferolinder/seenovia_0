@@ -225,5 +225,46 @@ function dbUpdateAgri($dbb){
     }
 }
 
+function dbCreateAgriUser($dbb){
+    try {
+        $userData = $_POST['userData'] ?? '';
+        if (!$userData) {
+            return ['error' => 'Aucune donnée reçue.'];
+        }
+
+        $data = json_decode($userData, true);
+        if (!is_array($data)) {
+            return ['error' => 'Format de données invalide.'];
+        }
+
+        // Validate required fields
+        if (empty($data['nom']) || empty($data['prenom']) || empty($data['adresseMail']) || empty($data['mdp'])) {
+            return ['error' => 'Les champs nom, prénom, email et mot de passe sont requis.'];
+        }
+
+        // Check if email already exists
+        $checkStmt = $dbb->prepare('SELECT id FROM users WHERE adresseMail = :email');
+        $checkStmt->execute([':email' => $data['adresseMail']]);
+        if ($checkStmt->fetch()) {
+            return ['error' => 'Cet email est déjà utilisé.'];
+        }
+
+        // Insert new user
+        $insertStmt = $dbb->prepare('INSERT INTO users (nom, prenom, adresseMail, telephone, mdp, admin) VALUES (:nom, :prenom, :email, :telephone, :mdp, FALSE)');
+        $insertStmt->execute([
+            ':nom' => $data['nom'],
+            ':prenom' => $data['prenom'],
+            ':email' => $data['adresseMail'],
+            ':telephone' => $data['telephone'] ?? null,
+            ':mdp' => $data['mdp']
+        ]);
+
+        return ['success' => true, 'message' => 'Compte agri créé avec succès.'];
+    }
+    catch (PDOException $e) {
+        return ['error' => 'Erreur lors de la création du compte.'];
+    }
+}
+
 ?>
 
