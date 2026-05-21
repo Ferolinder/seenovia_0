@@ -10,7 +10,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Accueil</title>
-  <link rel="icon" type="image/x-icon" href="image/logo.png">
+  <link rel="icon" type="image/x-icon" href="pictures/logo.png">
   <link href="css/style.css" rel="stylesheet">
 
   <script src="js/ajax.js" defer></script>

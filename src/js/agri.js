@@ -5,6 +5,8 @@ const saveRowsBtn = document.getElementById('saveRowsBtn');
 const feedbackBox = document.getElementById('agriFeedback');
 
 let editMode = false;
+let isLoading = false;
+const storageKey = (id) => `agri_data_user_${id}`;
 const visibleColumns = ['crop_nom', 'surface', 'engrais', 'phyto', 'A', 'B', 'C'];
 const columnLabels = {
     crop_nom: 'Culture',
@@ -25,7 +27,22 @@ if (saveRowsBtn) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    document.body.classList.add('page-agri');
     if (USER_ID) {
+        // render cached data immediately if available
+        try {
+            const cached = sessionStorage.getItem(storageKey(USER_ID));
+            if (cached) {
+                const parsed = JSON.parse(cached);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    reactDataAgri(parsed);
+                }
+            }
+        } catch (e) {
+            console.warn('Erreur lecture cache agri', e);
+        }
+
+        // always refresh in background
         addAggriData(USER_ID);
     }
 });
@@ -60,6 +77,13 @@ function reactDataAgri(data) {
     }
 
     if (!Array.isArray(data) || data.length === 0) {
+        // If empty result, keep cached view (if any) instead of wiping the table during reload
+        const cached = USER_ID ? sessionStorage.getItem(storageKey(USER_ID)) : null;
+        if (cached) {
+            if (feedback) feedback.textContent = 'Aucune nouvelle donnée — affichage en cache.';
+            return;
+        }
+
         greeting.textContent = 'Bonjour agriculteur';
         table.innerHTML = '<tr><td>Aucune donnée disponible pour ce profil.</td></tr>';
         toggleEditButtons(false);
