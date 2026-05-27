@@ -531,6 +531,12 @@ body.page-agri footer {
   color: rgba(96, 112, 99, 0.5);
 }
 
+.form-group small {
+  color: rgba(96, 112, 99, 0.6);
+  font-size: 0.8rem;
+  margin-top: -0.3rem;
+}
+
 .form-error {
   color: #d32f2f;
   font-size: 0.85rem;
@@ -544,4 +550,56 @@ body.page-agri footer {
 
 .agri-button-primary:hover:not(:disabled) {
   background: #50614d;
+}
+
+/* Modal tabs for mode switching */
+.modal-mode-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 2px solid rgba(96, 112, 99, 0.2);
+}
+
+.modal-tab {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  background: none;
+  border: none;
+  color: #607063;
+  font-weight: 600;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s ease;
+  font-size: 0.95rem;
+}
+
+.modal-tab:hover {
+  color: #264d3c;
+}
+
+.modal-tab.active {
+  color: #264d3c;
+  border-bottom-color: #607063;
+}
+
+/* Modal mode sections */
+.modal-mode {
+  display: none;
+  animation: fadeInMode 0.3s ease;
+}
+
+.modal-mode.active {
+  display: block;
+}
+
+@keyframes fadeInMode {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.modal-mode h2 {
+  margin: 0 0 1.5rem 0;
+  color: #264d3c;
+  font-size: 1.5rem;
+  font-weight: 700;
 }

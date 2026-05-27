@@ -66,6 +66,11 @@ switch($req){
         echo json_encode($result);
         break;
       }
+      case "create_agri_users" : {
+        $result = dbCreateAgriUsers($db);
+        echo json_encode($result);
+        break;
+      }
       default : {
         echo json_encode(['error' => 'Ressource POST non définie: ' . $requestRessource]);
       }

@@ -1,18 +1,27 @@
-// Admin view: list all farmers and their crops, editable, export SVG
+// Admin view: list all farmers and their crops, editable, export CSV
 const modifyAllBtn = document.getElementById('modifyAllBtn');
 const saveAllBtn = document.getElementById('saveAllBtn');
-const downloadSvgBtn = document.getElementById('downloadSvgBtn');
+const downloadCsvBtn = document.getElementById('downloadCsvBtn');
 const createAgriUserBtn = document.getElementById('createAgriUserBtn');
+const downloadAgriTemplateBtn = document.getElementById('downloadAgriTemplateBtn');
+const agriCsvFileInput = document.getElementById('agriCsvFile');
 const seenoviaList = document.getElementById('seenoviaList');
 const feedbackBox = document.getElementById('seenoviaFeedback');
 
 // Modal elements
 const createAgriUserModal = document.getElementById('createAgriUserModal');
 const createAgriUserForm = document.getElementById('createAgriUserForm');
+const createAgriCsvForm = document.getElementById('createAgriCsvForm');
 const modalCloseBtn = document.querySelector('.modal-close');
 const createAgriUserError = document.getElementById('createAgriUserError');
+const createAgriCsvError = document.getElementById('createAgriCsvError');
+const modalTabs = document.querySelectorAll('.modal-tab');
+const modeManual = document.getElementById('modeManual');
+const modeCsv = document.getElementById('modeCsv');
+const modalButtonMode = document.getElementById('modal-button-mode');
 
 let editMode = false;
+let currentModalMode = 'manual';
 const visibleColumns = ['crop_nom', 'surface', 'engrais', 'phyto', 'A', 'B', 'C'];
 const columnLabels = {
     crop_nom: 'Culture',
@@ -26,18 +35,31 @@ const columnLabels = {
 
 if (modifyAllBtn) modifyAllBtn.addEventListener('click', () => setEditMode(true));
 if (saveAllBtn) saveAllBtn.addEventListener('click', saveAllData);
-if (downloadSvgBtn) downloadSvgBtn.addEventListener('click', downloadSvg);
 if (createAgriUserBtn) createAgriUserBtn.addEventListener('click', openCreateAgriUserModal);
+if (downloadAgriTemplateBtn) downloadAgriTemplateBtn.addEventListener('click', downloadAgriTemplate);
 if (modalCloseBtn) modalCloseBtn.addEventListener('click', closeCreateAgriUserModal);
 if (createAgriUserModal) createAgriUserModal.addEventListener('click', (e) => {
   if (e.target === createAgriUserModal) closeCreateAgriUserModal();
 });
 if (createAgriUserForm) createAgriUserForm.addEventListener('submit', handleCreateAgriUserSubmit);
+if (createAgriCsvForm) createAgriCsvForm.addEventListener('submit', handleCreateAgriCsvSubmit);
+modalTabs.forEach(tab => {
+  tab.addEventListener('click', (e) => switchModalMode(e.target.dataset.mode));
+});
 
 document.addEventListener('DOMContentLoaded', () => {
     // load all data (non-admin users)
     ajax_req('GET', 'php/request.php/data_agri_all/', reactDataAll, '');
 });
+
+modalButtonMode.addEventListener('click', () => {
+    if (currentModalMode === 'manual') {
+        switchModalMode('csv');
+    } else {
+        switchModalMode('manual');
+    }
+});
+
 
 function reactDataAll(data) {
     if (!Array.isArray(data) || data.length === 0) {
@@ -49,7 +71,16 @@ function reactDataAll(data) {
     const grouped = {};
     data.forEach(row => {
         const uid = row.user_id || row.user_id === 0 ? String(row.user_id) : 'unknown';
-        if (!grouped[uid]) grouped[uid] = { user: { id: row.user_id, nom: row.user_nom, prenom: row.user_prenom }, rows: [] };
+        if (!grouped[uid]) grouped[uid] = {
+            user: {
+                id: row.user_id,
+                nom: row.user_nom,
+                prenom: row.user_prenom,
+                email: row.user_email || '',
+                telephone: row.user_telephone || ''
+            },
+            rows: []
+        };
         grouped[uid].rows.push(row);
     });
 
@@ -60,6 +91,10 @@ function reactDataAll(data) {
         const container = document.createElement('div');
         container.className = 'seenovia-user';
         container.dataset.userId = group.user.id;
+        container.dataset.userNom = group.user.nom;
+        container.dataset.userPrenom = group.user.prenom;
+        container.dataset.userEmail = group.user.email;
+        container.dataset.userTelephone = group.user.telephone;
 
         const title = document.createElement('h3');
         title.className = 'seenovia-user-title';
@@ -164,36 +199,177 @@ function handleSaveResponse(data) {
     ajax_req('GET', 'php/request.php/data_agri/', reactDataAll, '');
 }
 
-function downloadSvg() {
-    const container = document.getElementById('seenoviaList');
-    if (!container) return;
-    // clone and inline minimal styles
-    const clone = container.cloneNode(true);
-    const wrapper = document.createElement('div');
-    wrapper.appendChild(clone);
-    const serialized = new XMLSerializer().serializeToString(wrapper);
+function downloadAgriTemplate() {
+    const formData = new FormData(createAgriUserForm);
+    const values = Object.fromEntries(formData);
 
-    const width = wrapper.scrollWidth || 1200;
-    const height = wrapper.scrollHeight || 800;
-    const svg = `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns='http://www.w3.org/2000/svg' width='${width}' height='${height}'>\n  <foreignObject width='100%' height='100%'>\n    ${serialized}\n  </foreignObject>\n</svg>`;
+    const headers = [
+        'nom',
+        'prenom',
+        'adresseMail',
+        'telephone',
+        'mdp',
+        'admin',
+        'Culture',
+        'Surface',
+        'Engrais',
+        'Phyto',
+        'A',
+        'B',
+        'C'
+    ];
 
-    const blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
+    // Fonction échappement CSV
+    const escapeCsv = (value) =>
+        `"${String(value || '').replace(/"/g, '""')}"`;
+
+    // Cultures par défaut
+    const cultures = ['Blé', 'Maïs', 'Colza'];
+
+    // Nombre d'exemples d'agriculteurs dans le fichier
+    const numberOfFarmers = 3;
+
+    const csvRows = [];
+
+    // Ajout des colonnes
+    csvRows.push(headers.map(escapeCsv).join(';'));
+
+    for (let farmerIndex = 0; farmerIndex < numberOfFarmers; farmerIndex++) {
+
+        cultures.forEach((culture, cultureIndex) => {
+
+            const row = [
+                cultureIndex === 0
+                    ? (values.nom || `ExempleNom${farmerIndex + 1}`)
+                    : '',
+
+                cultureIndex === 0
+                    ? (values.prenom || `ExemplePrenom${farmerIndex + 1}`)
+                    : '',
+
+                cultureIndex === 0
+                    ? (values.adresseMail || `exemple${farmerIndex + 1}@agri.fr`)
+                    : '',
+
+                cultureIndex === 0
+                    ? (values.telephone || '+33 6 00 00 00 00')
+                    : '',
+
+                cultureIndex === 0
+                    ? (values.mdp || 'motdepasse')
+                    : '',
+
+                cultureIndex === 0
+                    ? 'false'
+                    : '',
+
+                culture,
+                '0',
+                '0',
+                '0',
+                '0',
+                '0',
+                '0'
+            ];
+
+            csvRows.push(row.map(escapeCsv).join(';'));
+        });
+
+        // Ligne vide entre chaque agriculteur
+        csvRows.push('');
+    }
+
+    // UTF-8 BOM pour Excel
+    const csvContent = '\uFEFF' + csvRows.join('\n');
+
+    const blob = new Blob([csvContent], {
+        type: 'text/csv;charset=utf-8;'
+    });
+
     const url = URL.createObjectURL(blob);
+
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'seenovia_table.svg';
+    a.download = 'agri_template.csv';
+
     document.body.appendChild(a);
     a.click();
-    a.remove();
+
+    document.body.removeChild(a);
     URL.revokeObjectURL(url);
+}
+
+function parseCsv(text) {
+    const lines = text
+        .replace(/\r/g, '')
+        .split('\n')
+        .filter(line => line.trim() !== '');
+
+    if (lines.length < 2) return [];
+
+    const headers = lines[0]
+        .split(';')
+        .map(h => h.replace(/"/g, '').trim());
+
+    const users = [];
+    let currentUser = null;
+
+    for (let i = 1; i < lines.length; i++) {
+
+        const values = lines[i]
+            .split(';')
+            .map(v => v.replace(/"/g, '').trim());
+
+        const row = {};
+        headers.forEach((header, index) => {
+            row[header] = values[index] || '';
+        });
+
+        // Nouvelle personne
+        if (row.nom !== '') {
+
+            currentUser = {
+                nom: row.nom,
+                prenom: row.prenom,
+                adresseMail: row.adresseMail,
+                telephone: row.telephone,
+                mdp: row.mdp,
+                cultures: []
+            };
+
+            users.push(currentUser);
+        }
+
+        if (!currentUser) continue;
+
+        // Culture
+        if (row.Culture !== '') {
+
+            currentUser.cultures.push({
+                Culture: row.Culture,
+                Surface: row.Surface,
+                Engrais: row.Engrais,
+                Phyto: row.Phyto,
+                A: row.A,
+                B: row.B,
+                C: row.C
+            });
+        }
+    }
+
+    return users;
 }
 
 // Functions for creating agri user modal
 function openCreateAgriUserModal() {
     if (createAgriUserModal) {
         createAgriUserModal.classList.add('active');
+        currentModalMode = 'manual';
+        switchModalMode('manual');
         createAgriUserForm.reset();
+        createAgriCsvForm.reset();
         if (createAgriUserError) createAgriUserError.textContent = '';
+        if (createAgriCsvError) createAgriCsvError.textContent = '';
     }
 }
 
@@ -201,7 +377,31 @@ function closeCreateAgriUserModal() {
     if (createAgriUserModal) {
         createAgriUserModal.classList.remove('active');
         createAgriUserForm.reset();
+        createAgriCsvForm.reset();
         if (createAgriUserError) createAgriUserError.textContent = '';
+        if (createAgriCsvError) createAgriCsvError.textContent = '';
+    }
+}
+
+function switchModalMode(mode) {
+    currentModalMode = mode;
+    
+    // Update tabs
+    modalTabs.forEach(tab => {
+        if (tab.dataset.mode === mode) {
+            tab.classList.add('active');
+        } else {
+            tab.classList.remove('active');
+        }
+    });
+    
+    // Update mode sections
+    if (mode === 'manual') {
+        if (modeManual) modeManual.classList.add('active');
+        if (modeCsv) modeCsv.classList.remove('active');
+    } else if (mode === 'csv') {
+        if (modeManual) modeManual.classList.remove('active');  
+        if (modeCsv) modeCsv.classList.add('active');
     }
 }
 
@@ -236,15 +436,69 @@ function handleCreateAgriUserSubmit(e) {
 }
 
 function handleCreateAgriUserResponse(data) {
+    const errorElement = currentModalMode === 'manual' ? createAgriUserError : createAgriCsvError;
+    
     if (!data || data.error) {
-        if (createAgriUserError) createAgriUserError.textContent = data && data.error ? data.error : 'Erreur lors de la création du compte.';
+        if (errorElement) errorElement.textContent = data && data.error ? data.error : 'Erreur lors de la création du compte.';
         return;
     }
+    
     if (feedbackBox) {
-        feedbackBox.textContent = data.message || 'Compte agri créé avec succès.';
+        feedbackBox.textContent = data.message || 'Compte(s) agri créé(s) avec succès.';
         feedbackBox.style.color = '#607063';
     }
     closeCreateAgriUserModal();
     // Reload data
     ajax_req('GET', 'php/request.php/data_agri_all/', reactDataAll, '');
+}
+
+function handleCreateAgriCsvSubmit(e) {
+
+    e.preventDefault();
+
+    if (createAgriCsvError) {
+        createAgriCsvError.textContent = '';
+    }
+
+    if (
+        !agriCsvFileInput ||
+        !agriCsvFileInput.files ||
+        agriCsvFileInput.files.length === 0
+    ) {
+        createAgriCsvError.textContent =
+            'Veuillez sélectionner un fichier CSV.';
+        return;
+    }
+
+    const file = agriCsvFileInput.files[0];
+    const reader = new FileReader();
+
+    reader.onload = (event) => {
+
+        const text = event.target.result;
+
+        const users = parseCsv(text);
+
+        if (!Array.isArray(users) || users.length === 0) {
+
+            createAgriCsvError.textContent =
+                'Le fichier CSV est vide ou invalide.';
+            return;
+        }
+
+        ajax_req(
+            'POST',
+            'php/request.php/create_agri_users/',
+            handleCreateAgriUserResponse,
+            'usersData=' + encodeURIComponent(JSON.stringify(users))
+        );
+    };
+
+    reader.onerror = () => {
+
+        createAgriCsvError.textContent =
+            'Impossible de lire le fichier CSV.';
+    };
+
+    reader.readAsText(file, 'UTF-8');
 }

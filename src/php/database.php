@@ -170,7 +170,7 @@ function dbDataAgriAll($dbb){
         $dbb->commit();
 
         // Fetch rows only for non-admin users
-        $request = 'SELECT u.id AS user_id, u.nom AS user_nom, u.prenom AS user_prenom, link.*, spec.surface, spec.engrais, spec.phyto, spec.A, spec.B, spec.C, crops.nom AS crop_nom FROM link JOIN users u ON link.user_id = u.id JOIN spec ON link.spec_id = spec.id JOIN crops ON link.crop_id = crops.id WHERE (u.admin = false OR u.admin IS NULL) ORDER BY u.id, crops.id';
+        $request = 'SELECT u.id AS user_id, u.nom AS user_nom, u.prenom AS user_prenom, u.adresseMail AS user_email, u.telephone AS user_telephone, link.*, spec.surface, spec.engrais, spec.phyto, spec.A, spec.B, spec.C, crops.nom AS crop_nom FROM link JOIN users u ON link.user_id = u.id JOIN spec ON link.spec_id = spec.id JOIN crops ON link.crop_id = crops.id WHERE (u.admin = false OR u.admin IS NULL) ORDER BY u.id, crops.id';
         $statement = $dbb->prepare($request);
         $statement->execute();
         $result = $statement->fetchAll(PDO::FETCH_ASSOC);
@@ -263,6 +263,257 @@ function dbCreateAgriUser($dbb){
     }
     catch (PDOException $e) {
         return ['error' => 'Erreur lors de la création du compte.'];
+    }
+}
+
+function dbCreateAgriUsers($dbb) {
+
+    try {
+
+        $usersData = $_POST['usersData'] ?? '';
+
+        if (!$usersData) {
+            return ['error' => 'Aucune donnée reçue.'];
+        }
+
+        $users = json_decode($usersData, true);
+
+        if (!is_array($users)) {
+            return ['error' => 'Format JSON invalide.'];
+        }
+
+        $dbb->beginTransaction();
+
+        /*
+            PREPARED STATEMENTS
+        */
+
+        // Vérifie email existant
+        $checkUserStmt = $dbb->prepare(
+            'SELECT id FROM users WHERE adresseMail = :email'
+        );
+
+        // Insert user
+        $insertUserStmt = $dbb->prepare(
+            'INSERT INTO users
+            (nom, prenom, adresseMail, telephone, mdp, admin)
+            VALUES
+            (:nom, :prenom, :email, :telephone, :mdp, FALSE)'
+        );
+
+        // Vérifie culture existante
+        $checkCropStmt = $dbb->prepare(
+            'SELECT id FROM crops WHERE nom = :nom'
+        );
+
+        // Insert crop
+        $insertCropStmt = $dbb->prepare(
+            'INSERT INTO crops (nom)
+            VALUES (:nom)'
+        );
+
+        // Insert spec
+        $insertSpecStmt = $dbb->prepare(
+            'INSERT INTO spec
+            (surface, engrais, phyto, A, B, C)
+            VALUES
+            (:surface, :engrais, :phyto, :A, :B, :C)'
+        );
+
+        // Insert link
+        $insertLinkStmt = $dbb->prepare(
+            'INSERT INTO link
+            (spec_id, crop_id, user_id)
+            VALUES
+            (:spec_id, :crop_id, :user_id)'
+        );
+
+        $created = 0;
+
+        /*
+            USERS LOOP
+        */
+
+        foreach ($users as $userIndex => $user) {
+
+            $nom = trim($user['nom'] ?? '');
+            $prenom = trim($user['prenom'] ?? '');
+            $email = trim($user['adresseMail'] ?? '');
+            $telephone = trim($user['telephone'] ?? '');
+            $mdp = trim($user['mdp'] ?? '');
+
+            /*
+                VALIDATION USER
+            */
+
+            if (
+                $nom === '' ||
+                $prenom === '' ||
+                $email === '' ||
+                $mdp === ''
+            ) {
+
+                $dbb->rollBack();
+
+                return [
+                    'error' =>
+                        'Agriculteur #' .
+                        ($userIndex + 1) .
+                        ' : informations utilisateur manquantes.'
+                ];
+            }
+
+            /*
+                EMAIL EXISTANT
+            */
+
+            $checkUserStmt->execute([
+                ':email' => $email
+            ]);
+
+            if ($checkUserStmt->fetch()) {
+
+                $dbb->rollBack();
+
+                return [
+                    'error' =>
+                        'Agriculteur #' .
+                        ($userIndex + 1) .
+                        ' : email déjà utilisé.'
+                ];
+            }
+
+            /*
+                INSERT USER
+            */
+
+            $insertUserStmt->execute([
+                ':nom' => $nom,
+                ':prenom' => $prenom,
+                ':email' => $email,
+                ':telephone' => $telephone ?: null,
+                ':mdp' => $mdp
+            ]);
+
+            $userId = $dbb->lastInsertId();
+
+            /*
+                CULTURES
+            */
+
+            $cultures = $user['cultures'] ?? [];
+
+            if (!is_array($cultures) || count($cultures) === 0) {
+
+                $dbb->rollBack();
+
+                return [
+                    'error' =>
+                        'Agriculteur #' .
+                        ($userIndex + 1) .
+                        ' : aucune culture renseignée.'
+                ];
+            }
+
+            foreach ($cultures as $cultureIndex => $culture) {
+
+                $cultureName = trim($culture['Culture'] ?? '');
+
+                if ($cultureName === '') {
+
+                    $dbb->rollBack();
+
+                    return [
+                        'error' =>
+                            'Agriculteur #' .
+                            ($userIndex + 1) .
+                            ', culture #' .
+                            ($cultureIndex + 1) .
+                            ' : nom de culture manquant.'
+                    ];
+                }
+
+                /*
+                    VALUES
+                */
+
+                $surface = floatval($culture['Surface'] ?? 0);
+                $engrais = floatval($culture['Engrais'] ?? 0);
+                $phyto = floatval($culture['Phyto'] ?? 0);
+
+                $A = floatval($culture['A'] ?? 0);
+                $B = floatval($culture['B'] ?? 0);
+                $C = floatval($culture['C'] ?? 0);
+
+                /*
+                    GET OR CREATE CROP
+                */
+
+                $checkCropStmt->execute([
+                    ':nom' => $cultureName
+                ]);
+
+                $crop = $checkCropStmt->fetch(PDO::FETCH_ASSOC);
+
+                if ($crop) {
+
+                    $cropId = $crop['id'];
+
+                } else {
+
+                    $insertCropStmt->execute([
+                        ':nom' => $cultureName
+                    ]);
+
+                    $cropId = $dbb->lastInsertId();
+                }
+
+                /*
+                    INSERT SPEC
+                */
+
+                $insertSpecStmt->execute([
+                    ':surface' => $surface,
+                    ':engrais' => $engrais,
+                    ':phyto' => $phyto,
+                    ':A' => $A,
+                    ':B' => $B,
+                    ':C' => $C
+                ]);
+
+                $specId = $dbb->lastInsertId();
+
+                /*
+                    INSERT LINK
+                */
+
+                $insertLinkStmt->execute([
+                    ':spec_id' => $specId,
+                    ':crop_id' => $cropId,
+                    ':user_id' => $userId
+                ]);
+            }
+
+            $created++;
+        }
+
+        $dbb->commit();
+
+        return [
+            'success' => true,
+            'created' => $created,
+            'message' => $created . ' agriculteur(s) créé(s) avec leurs cultures.'
+        ];
+    }
+    catch (PDOException $e) {
+
+        if ($dbb->inTransaction()) {
+            $dbb->rollBack();
+        }
+
+        return [
+            'error' => 'Erreur SQL : ' . $e->getMessage()
+        ];
     }
 }
 
