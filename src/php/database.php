@@ -2,74 +2,124 @@
 ## Place where we put the functions that interact with the database
 include_once("consts.php");
 
-function dbConnect(){ //connexion avec la base de données
-    $dsn = 'pgsql:dbname='.db_name.';host='.db_serveur.';port='.db_port;
+function dbConnect(){ // connexion avec la base de données
+
+    $dsn =
+        'mysql:host=' . db_serveur .
+        ';dbname=' . db_name .
+        ';port=' . db_port .
+        ';charset=utf8mb4';
+
     try {
-        $conn = new PDO($dsn, db_user, db_password);
+
+        $conn = new PDO(
+            $dsn,
+            db_user,
+            db_password
+        );
+
+        // Active les erreurs PDO
+        $conn->setAttribute(
+            PDO::ATTR_ERRMODE,
+            PDO::ERRMODE_EXCEPTION
+        );
+
+        // UTF8
+        $conn->exec("SET NAMES utf8mb4");
+
         return $conn;
-    } catch (PDOException $e) {
+
+    }
+    catch (PDOException $e) {
+
         echo 'Connexion échouée : ' . $e->getMessage();
     }
 }
 
 function dbTest($dbb){
-    try {
-        //getting the request data
-        $tab = $_GET['tab'];
 
-        //request
+    try {
+
+        // getting request data
+        $tab = $_GET['tab'] ?? '';
+
+        // request
         $request = 'SELECT * FROM crops';
+
         $statement = $dbb->prepare($request);
 
-        //binding the datas
-        // $statement->bindParam(':tab', $tab);
-
-        //executing
+        // executing
         $statement->execute();
+
         $result = $statement->fetchAll(PDO::FETCH_ASSOC);
+
         return $result;
     }
     catch (PDOException $e) {
-        print $e;
-        echo "<p id='Error'>Une erreur s'est produite lors de l'exécution de la requête.</p>";
+
+        print_r($e);
+
+        echo "<p id='Error'>
+                Une erreur s'est produite lors de l'exécution de la requête.
+              </p>";
     }
 }
 
 function dbConnectUser($dbb){
+
     try {
+
         $mail = $_GET['mail'] ?? '';
         $mdp = $_GET['mdp'] ?? '';
 
-        $request = 'SELECT id, admin FROM users WHERE adresseMail = :mail AND mdp = :mdp LIMIT 1';
+        $request =
+            'SELECT id, admin
+             FROM users
+             WHERE adresseMail = :mail
+             AND mdp = :mdp
+             LIMIT 1';
+
         $statement = $dbb->prepare($request);
+
         $statement->bindParam(':mail', $mail);
         $statement->bindParam(':mdp', $mdp);
+
         $statement->execute();
 
         $user = $statement->fetch(PDO::FETCH_ASSOC);
-        
+
+        // Aucun utilisateur
         if ($user === false) {
+
             return 0;
         }
-        
-        // Si c'est un admin, retourner true pour redirection vers seenovia
-        if ($user['admin'] === true || $user['admin'] === 1 || $user['admin'] === 't') {
+
+        // Si admin
+        if (
+            $user['admin'] == true ||
+            $user['admin'] == 1
+        ) {
+
             return true;
         }
-        
-        // Sinon retourner l'id pour redirection vers agri
-        return (int) $user['id'];
+
+        // Sinon utilisateur normal
+        return (int)$user['id'];
     }
     catch (PDOException $e) {
+
         return "e0";
     }
 }
 
 function dbDataAgri($dbb){
+
     try {
+
         $id_user = $_GET['id_user'] ?? 0;
+
         if (!$id_user) {
-            return [];  
+            return [];
         }
 
         $dbb->beginTransaction();
@@ -77,29 +127,56 @@ function dbDataAgri($dbb){
         $cropStmt = $dbb->query('SELECT id FROM crops');
         $cropIds = $cropStmt->fetchAll(PDO::FETCH_COLUMN);
 
-        $findLinkStmt = $dbb->prepare('SELECT id, spec_id FROM link WHERE user_id = :user_id AND crop_id = :crop_id');
-        $insertSpecStmt = $dbb->prepare('INSERT INTO spec (surface, engrais, phyto, A, B, C) VALUES (0, 0, 0, 0, 0, 0) RETURNING id');
-        $insertLinkStmt = $dbb->prepare('INSERT INTO link (spec_id, crop_id, user_id) VALUES (:spec_id, :crop_id, :user_id)');
-        $updateLinkStmt = $dbb->prepare('UPDATE link SET spec_id = :spec_id WHERE id = :link_id');
+        $findLinkStmt = $dbb->prepare(
+            'SELECT id, spec_id
+             FROM link
+             WHERE user_id = :user_id
+             AND crop_id = :crop_id'
+        );
+
+        $insertSpecStmt = $dbb->prepare(
+            'INSERT INTO spec (surface, engrais, phyto, A, B, C)
+             VALUES (0,0,0,0,0,0)'
+        );
+
+        $insertLinkStmt = $dbb->prepare(
+            'INSERT INTO link (spec_id, crop_id, user_id)
+             VALUES (:spec_id, :crop_id, :user_id)'
+        );
+
+        $updateLinkStmt = $dbb->prepare(
+            'UPDATE link
+             SET spec_id = :spec_id
+             WHERE id = :link_id'
+        );
 
         foreach ($cropIds as $cropId) {
+
             $findLinkStmt->execute([
                 ':user_id' => $id_user,
                 ':crop_id' => $cropId
             ]);
+
             $link = $findLinkStmt->fetch(PDO::FETCH_ASSOC);
 
             if (!$link) {
+
                 $insertSpecStmt->execute();
-                $spec_id = $insertSpecStmt->fetchColumn();
+
+                $spec_id = $dbb->lastInsertId();
+
                 $insertLinkStmt->execute([
                     ':spec_id' => $spec_id,
                     ':crop_id' => $cropId,
                     ':user_id' => $id_user
                 ]);
-            } elseif (empty($link['spec_id'])) {
+            }
+            elseif (empty($link['spec_id'])) {
+
                 $insertSpecStmt->execute();
-                $spec_id = $insertSpecStmt->fetchColumn();
+
+                $spec_id = $dbb->lastInsertId();
+
                 $updateLinkStmt->execute([
                     ':spec_id' => $spec_id,
                     ':link_id' => $link['id']
@@ -109,56 +186,118 @@ function dbDataAgri($dbb){
 
         $dbb->commit();
 
-        $request = 'SELECT u.nom AS user_nom, u.prenom AS user_prenom, link.*, spec.surface, spec.engrais, spec.phyto, spec.A, spec.B, spec.C, crops.nom AS crop_nom FROM link JOIN users u ON link.user_id = u.id JOIN spec ON link.spec_id = spec.id JOIN crops ON link.crop_id = crops.id WHERE link.user_id = :id_user ORDER BY crops.id';
+        $request =
+            'SELECT
+                u.nom AS user_nom,
+                u.prenom AS user_prenom,
+                link.*,
+                spec.surface,
+                spec.engrais,
+                spec.phyto,
+                spec.A,
+                spec.B,
+                spec.C,
+                crops.nom AS crop_nom
+
+             FROM link
+             JOIN users u ON link.user_id = u.id
+             JOIN spec ON link.spec_id = spec.id
+             JOIN crops ON link.crop_id = crops.id
+             WHERE link.user_id = :id_user
+             ORDER BY crops.id';
+
         $statement = $dbb->prepare($request);
+
         $statement->bindParam(':id_user', $id_user, PDO::PARAM_INT);
+
         $statement->execute();
-        $result = $statement->fetchAll(PDO::FETCH_ASSOC);
-        return $result;
+
+        return $statement->fetchAll(PDO::FETCH_ASSOC);
     }
     catch (PDOException $e) {
+
         if ($dbb->inTransaction()) {
             $dbb->rollBack();
         }
-        print $e;
-        echo "<p id='Error'>Une erreur s'est produite lors de l'exécution de la requête.</p>";
+
+        return [
+            'error' => $e->getMessage()
+        ];
     }
 }
 
+
+/* ------------------------------------------------------------------ */
+
 function dbDataAgriAll($dbb){
+
     try {
-        // Ensure links/spec exist for all non-admin users and all crops
+
         $dbb->beginTransaction();
 
-        $userStmt = $dbb->query("SELECT id FROM users WHERE admin = false OR admin IS NULL");
+        $userStmt = $dbb->query(
+            "SELECT id
+             FROM users
+             WHERE admin = false OR admin IS NULL"
+        );
+
         $userIds = $userStmt->fetchAll(PDO::FETCH_COLUMN);
 
         $cropStmt = $dbb->query('SELECT id FROM crops');
         $cropIds = $cropStmt->fetchAll(PDO::FETCH_COLUMN);
 
-        $findLinkStmt = $dbb->prepare('SELECT id, spec_id FROM link WHERE user_id = :user_id AND crop_id = :crop_id');
-        $insertSpecStmt = $dbb->prepare('INSERT INTO spec (surface, engrais, phyto, A, B, C) VALUES (0, 0, 0, 0, 0, 0) RETURNING id');
-        $insertLinkStmt = $dbb->prepare('INSERT INTO link (spec_id, crop_id, user_id) VALUES (:spec_id, :crop_id, :user_id)');
-        $updateLinkStmt = $dbb->prepare('UPDATE link SET spec_id = :spec_id WHERE id = :link_id');
+        $findLinkStmt = $dbb->prepare(
+            'SELECT id, spec_id
+             FROM link
+             WHERE user_id = :user_id
+             AND crop_id = :crop_id'
+        );
+
+        $insertSpecStmt = $dbb->prepare(
+            'INSERT INTO spec (surface, engrais, phyto, A, B, C)
+             VALUES (0,0,0,0,0,0)'
+        );
+
+        $insertLinkStmt = $dbb->prepare(
+            'INSERT INTO link (spec_id, crop_id, user_id)
+             VALUES (:spec_id, :crop_id, :user_id)'
+        );
+
+        $updateLinkStmt = $dbb->prepare(
+            'UPDATE link
+             SET spec_id = :spec_id
+             WHERE id = :link_id'
+        );
 
         foreach ($userIds as $uId) {
+
             foreach ($cropIds as $cropId) {
+
                 $findLinkStmt->execute([
                     ':user_id' => $uId,
                     ':crop_id' => $cropId
                 ]);
+
                 $link = $findLinkStmt->fetch(PDO::FETCH_ASSOC);
+
                 if (!$link) {
+
                     $insertSpecStmt->execute();
-                    $spec_id = $insertSpecStmt->fetchColumn();
+
+                    $spec_id = $dbb->lastInsertId();
+
                     $insertLinkStmt->execute([
                         ':spec_id' => $spec_id,
                         ':crop_id' => $cropId,
                         ':user_id' => $uId
                     ]);
-                } elseif (empty($link['spec_id'])) {
+                }
+                elseif (empty($link['spec_id'])) {
+
                     $insertSpecStmt->execute();
-                    $spec_id = $insertSpecStmt->fetchColumn();
+
+                    $spec_id = $dbb->lastInsertId();
+
                     $updateLinkStmt->execute([
                         ':spec_id' => $spec_id,
                         ':link_id' => $link['id']
@@ -169,59 +308,111 @@ function dbDataAgriAll($dbb){
 
         $dbb->commit();
 
-        // Fetch rows only for non-admin users
-        $request = 'SELECT u.id AS user_id, u.nom AS user_nom, u.prenom AS user_prenom, u.adresseMail AS user_email, u.telephone AS user_telephone, link.*, spec.surface, spec.engrais, spec.phyto, spec.A, spec.B, spec.C, crops.nom AS crop_nom FROM link JOIN users u ON link.user_id = u.id JOIN spec ON link.spec_id = spec.id JOIN crops ON link.crop_id = crops.id WHERE (u.admin = false OR u.admin IS NULL) ORDER BY u.id, crops.id';
+        $request =
+            'SELECT
+                u.id AS user_id,
+                u.nom AS user_nom,
+                u.prenom AS user_prenom,
+                u.adresseMail AS user_email,
+                u.telephone AS user_telephone,
+                link.*,
+                spec.surface,
+                spec.engrais,
+                spec.phyto,
+                spec.A,
+                spec.B,
+                spec.C,
+                crops.nom AS crop_nom
+
+             FROM link
+             JOIN users u ON link.user_id = u.id
+             JOIN spec ON link.spec_id = spec.id
+             JOIN crops ON link.crop_id = crops.id
+             WHERE (u.admin = false OR u.admin IS NULL)
+             ORDER BY u.id, crops.id';
+
         $statement = $dbb->prepare($request);
         $statement->execute();
-        $result = $statement->fetchAll(PDO::FETCH_ASSOC);
-        return $result;
+
+        return $statement->fetchAll(PDO::FETCH_ASSOC);
     }
     catch (PDOException $e) {
+
         if ($dbb->inTransaction()) {
             $dbb->rollBack();
         }
-        print $e;
-        echo "<p id='Error'>Une erreur s'est produite lors de l'exécution de la requête.</p>";
+
+        return [
+            'error' => $e->getMessage()
+        ];
     }
 }
 
+
+/* ------------------------------------------------------------------ */
+
 function dbUpdateAgri($dbb){
+
     try {
+
         $updates = $_POST['updates'] ?? '';
+
         if (!$updates) {
             return ['error' => 'Aucune donnée à mettre à jour.'];
         }
 
         $rows = json_decode($updates, true);
+
         if (!is_array($rows)) {
             return ['error' => 'Format de données invalide.'];
         }
 
-        $statement = $dbb->prepare('UPDATE spec SET surface = :surface, engrais = :engrais, phyto = :phyto, A = :A, B = :B, C = :C WHERE id = :spec_id');
+        $statement = $dbb->prepare(
+            'UPDATE spec
+             SET
+                surface = :surface,
+                engrais = :engrais,
+                phyto = :phyto,
+                A = :A,
+                B = :B,
+                C = :C
+             WHERE id = :spec_id'
+        );
+
         $updated = 0;
 
         foreach ($rows as $row) {
+
             if (empty($row['spec_id'])) {
                 continue;
             }
 
             $statement->execute([
-                ':surface' => $row['surface'] !== null ? $row['surface'] : 0,
-                ':engrais' => $row['engrais'] !== null ? $row['engrais'] : 0,
-                ':phyto' => $row['phyto'] !== null ? $row['phyto'] : 0,
-                ':A' => $row['A'] !== null ? $row['A'] : 0,
-                ':B' => $row['B'] !== null ? $row['B'] : 0,
-                ':C' => $row['C'] !== null ? $row['C'] : 0,
+
+                ':surface' => $row['surface'] ?? 0,
+                ':engrais' => $row['engrais'] ?? 0,
+                ':phyto' => $row['phyto'] ?? 0,
+                ':A' => $row['A'] ?? 0,
+                ':B' => $row['B'] ?? 0,
+                ':C' => $row['C'] ?? 0,
+
                 ':spec_id' => $row['spec_id']
             ]);
 
             $updated += $statement->rowCount();
         }
 
-        return ['success' => true, 'updated' => $updated, 'message' => "$updated ligne(s) mises à jour."];
+        return [
+            'success' => true,
+            'updated' => $updated,
+            'message' => $updated . ' ligne(s) mises à jour.'
+        ];
     }
     catch (PDOException $e) {
-        return ['error' => 'Erreur lors de la mise à jour des données.'];
+
+        return [
+            'error' => 'Erreur lors de la mise à jour des données : ' . $e->getMessage()
+        ];
     }
 }
 
@@ -237,20 +428,22 @@ function dbCreateAgriUser($dbb){
             return ['error' => 'Format de données invalide.'];
         }
 
-        // Validate required fields
         if (empty($data['nom']) || empty($data['prenom']) || empty($data['adresseMail']) || empty($data['mdp'])) {
             return ['error' => 'Les champs nom, prénom, email et mot de passe sont requis.'];
         }
 
-        // Check if email already exists
         $checkStmt = $dbb->prepare('SELECT id FROM users WHERE adresseMail = :email');
         $checkStmt->execute([':email' => $data['adresseMail']]);
+
         if ($checkStmt->fetch()) {
             return ['error' => 'Cet email est déjà utilisé.'];
         }
 
-        // Insert new user
-        $insertStmt = $dbb->prepare('INSERT INTO users (nom, prenom, adresseMail, telephone, mdp, admin) VALUES (:nom, :prenom, :email, :telephone, :mdp, FALSE)');
+        $insertStmt = $dbb->prepare(
+            'INSERT INTO users (nom, prenom, adresseMail, telephone, mdp, admin)
+             VALUES (:nom, :prenom, :email, :telephone, :mdp, FALSE)'
+        );
+
         $insertStmt->execute([
             ':nom' => $data['nom'],
             ':prenom' => $data['prenom'],
@@ -284,55 +477,30 @@ function dbCreateAgriUsers($dbb) {
 
         $dbb->beginTransaction();
 
-        /*
-            PREPARED STATEMENTS
-        */
+        $checkUserStmt = $dbb->prepare('SELECT id FROM users WHERE adresseMail = :email');
 
-        // Vérifie email existant
-        $checkUserStmt = $dbb->prepare(
-            'SELECT id FROM users WHERE adresseMail = :email'
-        );
-
-        // Insert user
         $insertUserStmt = $dbb->prepare(
-            'INSERT INTO users
-            (nom, prenom, adresseMail, telephone, mdp, admin)
-            VALUES
-            (:nom, :prenom, :email, :telephone, :mdp, FALSE)'
+            'INSERT INTO users (nom, prenom, adresseMail, telephone, mdp, admin)
+             VALUES (:nom, :prenom, :email, :telephone, :mdp, FALSE)'
         );
 
-        // Vérifie culture existante
-        $checkCropStmt = $dbb->prepare(
-            'SELECT id FROM crops WHERE nom = :nom'
-        );
+        $checkCropStmt = $dbb->prepare('SELECT id FROM crops WHERE nom = :nom');
 
-        // Insert crop
         $insertCropStmt = $dbb->prepare(
-            'INSERT INTO crops (nom)
-            VALUES (:nom)'
+            'INSERT INTO crops (nom) VALUES (:nom)'
         );
 
-        // Insert spec
         $insertSpecStmt = $dbb->prepare(
-            'INSERT INTO spec
-            (surface, engrais, phyto, A, B, C)
-            VALUES
-            (:surface, :engrais, :phyto, :A, :B, :C)'
+            'INSERT INTO spec (surface, engrais, phyto, A, B, C)
+             VALUES (:surface, :engrais, :phyto, :A, :B, :C)'
         );
 
-        // Insert link
         $insertLinkStmt = $dbb->prepare(
-            'INSERT INTO link
-            (spec_id, crop_id, user_id)
-            VALUES
-            (:spec_id, :crop_id, :user_id)'
+            'INSERT INTO link (spec_id, crop_id, user_id)
+             VALUES (:spec_id, :crop_id, :user_id)'
         );
 
         $created = 0;
-
-        /*
-            USERS LOOP
-        */
 
         foreach ($users as $userIndex => $user) {
 
@@ -342,50 +510,21 @@ function dbCreateAgriUsers($dbb) {
             $telephone = trim($user['telephone'] ?? '');
             $mdp = trim($user['mdp'] ?? '');
 
-            /*
-                VALIDATION USER
-            */
-
-            if (
-                $nom === '' ||
-                $prenom === '' ||
-                $email === '' ||
-                $mdp === ''
-            ) {
-
+            if ($nom === '' || $prenom === '' || $email === '' || $mdp === '') {
                 $dbb->rollBack();
-
                 return [
-                    'error' =>
-                        'Agriculteur #' .
-                        ($userIndex + 1) .
-                        ' : informations utilisateur manquantes.'
+                    'error' => 'Agriculteur #' . ($userIndex + 1) . ' : informations utilisateur manquantes.'
                 ];
             }
 
-            /*
-                EMAIL EXISTANT
-            */
-
-            $checkUserStmt->execute([
-                ':email' => $email
-            ]);
+            $checkUserStmt->execute([':email' => $email]);
 
             if ($checkUserStmt->fetch()) {
-
                 $dbb->rollBack();
-
                 return [
-                    'error' =>
-                        'Agriculteur #' .
-                        ($userIndex + 1) .
-                        ' : email déjà utilisé.'
+                    'error' => 'Agriculteur #' . ($userIndex + 1) . ' : email déjà utilisé.'
                 ];
             }
-
-            /*
-                INSERT USER
-            */
 
             $insertUserStmt->execute([
                 ':nom' => $nom,
@@ -397,21 +536,12 @@ function dbCreateAgriUsers($dbb) {
 
             $userId = $dbb->lastInsertId();
 
-            /*
-                CULTURES
-            */
-
             $cultures = $user['cultures'] ?? [];
 
             if (!is_array($cultures) || count($cultures) === 0) {
-
                 $dbb->rollBack();
-
                 return [
-                    'error' =>
-                        'Agriculteur #' .
-                        ($userIndex + 1) .
-                        ' : aucune culture renseignée.'
+                    'error' => 'Agriculteur #' . ($userIndex + 1) . ' : aucune culture renseignée.'
                 ];
             }
 
@@ -420,57 +550,31 @@ function dbCreateAgriUsers($dbb) {
                 $cultureName = trim($culture['Culture'] ?? '');
 
                 if ($cultureName === '') {
-
                     $dbb->rollBack();
-
                     return [
                         'error' =>
-                            'Agriculteur #' .
-                            ($userIndex + 1) .
-                            ', culture #' .
-                            ($cultureIndex + 1) .
+                            'Agriculteur #' . ($userIndex + 1) .
+                            ', culture #' . ($cultureIndex + 1) .
                             ' : nom de culture manquant.'
                     ];
                 }
 
-                /*
-                    VALUES
-                */
-
                 $surface = floatval($culture['Surface'] ?? 0);
                 $engrais = floatval($culture['Engrais'] ?? 0);
                 $phyto = floatval($culture['Phyto'] ?? 0);
-
                 $A = floatval($culture['A'] ?? 0);
                 $B = floatval($culture['B'] ?? 0);
                 $C = floatval($culture['C'] ?? 0);
 
-                /*
-                    GET OR CREATE CROP
-                */
-
-                $checkCropStmt->execute([
-                    ':nom' => $cultureName
-                ]);
-
+                $checkCropStmt->execute([':nom' => $cultureName]);
                 $crop = $checkCropStmt->fetch(PDO::FETCH_ASSOC);
 
                 if ($crop) {
-
                     $cropId = $crop['id'];
-
                 } else {
-
-                    $insertCropStmt->execute([
-                        ':nom' => $cultureName
-                    ]);
-
+                    $insertCropStmt->execute([':nom' => $cultureName]);
                     $cropId = $dbb->lastInsertId();
                 }
-
-                /*
-                    INSERT SPEC
-                */
 
                 $insertSpecStmt->execute([
                     ':surface' => $surface,
@@ -482,10 +586,6 @@ function dbCreateAgriUsers($dbb) {
                 ]);
 
                 $specId = $dbb->lastInsertId();
-
-                /*
-                    INSERT LINK
-                */
 
                 $insertLinkStmt->execute([
                     ':spec_id' => $specId,
@@ -518,4 +618,3 @@ function dbCreateAgriUsers($dbb) {
 }
 
 ?>
-
