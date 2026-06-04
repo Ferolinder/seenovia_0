@@ -235,6 +235,76 @@ footer div#footer a:hover {
   20%, 40%, 60%, 80% { transform: translateX(6px); }
 }
 
+.accounts-box {
+  margin-top: 1rem;
+  padding: 1rem;
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.accounts-box h3 {
+  margin: 0 0 1rem 0;
+  color: #e3f0e4;
+  font-size: 1rem;
+  letter-spacing: 0.05em;
+}
+
+.account-card {
+  padding: 0.75rem;
+  margin-bottom: 0.75rem;
+  border-radius: 0.75rem;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.account-card:last-child {
+  margin-bottom: 0;
+}
+
+.account-title {
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  color: #ffffff;
+}
+
+.credential {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.4rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  background: rgba(255, 255, 255, 0.08);
+  word-break: break-all;
+}
+
+.credential:last-child {
+  margin-bottom: 0;
+}
+
+.credential span {
+  font-size: 0.9rem;
+  color: #ffffff;
+}
+
+.copy-btn {
+  border: none;
+  background: rgba(255, 255, 255, 0.12);
+  color: white;
+  border-radius: 0.5rem;
+  width: 34px;
+  height: 34px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.copy-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: scale(1.05);
+}
+
 /* Agri page*/
 #agriPage {
   padding: 2rem;

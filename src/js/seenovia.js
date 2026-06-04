@@ -502,3 +502,9 @@ function handleCreateAgriCsvSubmit(e) {
 
     reader.readAsText(file, 'UTF-8');
 }
+
+
+function setTablePage(){
+    window.location.href = 'table.php';
+}
+

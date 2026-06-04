@@ -9,18 +9,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Seenovia</title>
+  <title>table</title>
   <link rel="icon" type="image/x-icon" href="pictures/logo.png">
   <link href="css/style.css" rel="stylesheet">
 
   <script src="js/ajax.js" defer></script>
-  <script src="js/seenovia.js" defer></script>
+  <script src="js/table.js" defer></script>
 </head>
 
 <body>
 <?php
   require_once("views/header.php");
-  require_once("views/contentseenovia.php");
+  require_once("views/contenttable.php");
   require_once("views/footer.php");
 ?>
 </body>

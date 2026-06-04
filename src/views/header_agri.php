@@ -3,6 +3,6 @@
         <a href="accueil.php">
             <img src="pictures/logo.png" alt="Logo">
         </a>
-        <h1>seenovia test</h1>
+        <h1>seenovia test - Agricole</h1>
     </div>
  </header>

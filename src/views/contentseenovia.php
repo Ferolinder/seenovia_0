@@ -10,8 +10,9 @@
     <section id="seenoviaControls" class="section agri-controls">
       <button id="modifyAllBtn" class="agri-button">Modifier</button>
       <button id="saveAllBtn" class="agri-button agri-button-secondary" disabled>Enregistrer</button>
-      <button id="downloadCsvBtn" class="agri-button agri-button-secondary">Télécharger CSV</button>
+      <!-- <button id="downloadCsvBtn" class="agri-button agri-button-secondary">Télécharger CSV</button> -->
       <button id="createAgriUserBtn" class="agri-button" style="margin-left: auto;">Créer un compte agri</button>
+      <button id="Modifier tableau" class="agri-button" style="margin-left: auto;" onclick="setTablePage()">Modifier le tableau</button>
       <div id="seenoviaFeedback" class="agri-feedback"></div>
     </section>
 

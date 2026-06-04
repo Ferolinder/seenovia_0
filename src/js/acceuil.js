@@ -91,3 +91,13 @@ function printf(data) {
 
   console.log("Response received:", data);
 }
+
+function copyText(text) {
+  navigator.clipboard.writeText(text)
+    .then(() => {
+      console.log("Texte copié :", text);
+    })
+    .catch(err => {
+      console.error("Erreur de copie :", err);
+    });
+}

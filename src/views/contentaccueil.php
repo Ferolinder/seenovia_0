@@ -15,4 +15,44 @@
   </div>
   <a class="button-modal" id="buttonConnect">CONNECT</a>
   <div class="error"></div>
+  <div class="accounts-box">
+    <h3>Comptes de démonstration</h3>
+  
+    <div class="account-card">
+      <div class="account-title">Agri</div>
+  
+      <div class="credential">
+        <span>alice.moreau@example.com</span>
+        <button type="button" class="copy-btn" onclick="copyText('alice.moreau@example.com')" title="Copier l'identifiant">
+          📋
+        </button>
+      </div>
+  
+      <div class="credential">
+        <span>secret456</span>
+        <button type="button" class="copy-btn" onclick="copyText('secret456')" title="Copier le mot de passe">
+          📋
+        </button>
+      </div>
+    </div>
+  
+    <div class="account-card">
+      <div class="account-title">Admin</div>
+  
+      <div class="credential">
+        <span>nicolas.bernard@seenovia.fr</span>
+        <button type="button" class="copy-btn" onclick="copyText('nicolas.bernard@seenovia.fr')" title="Copier l'identifiant">
+          📋
+        </button>
+      </div>
+  
+      <div class="credential">
+        <span>svpass2</span>
+        <button type="button" class="copy-btn" onclick="copyText('svpass2')" title="Copier le mot de passe">
+          📋
+        </button>
+      </div>
+    </div>
+  </div>
 </div>
+
