@@ -1,3 +1,5 @@
+document.getElementById("table_link").classList.add("active");
+
 // Function that put the full table on screen 
 function displaytable(data) {
 

@@ -1,3 +1,5 @@
+<!-- this page is meant to modify the all table using the different function -->
+
 <?php
   error_reporting(E_ALL ^ E_NOTICE); // Omit notices
   session_start();
@@ -15,12 +17,13 @@
 
   <script src="js/ajax.js" defer></script>
   <script src="js/table.js" defer></script>
+  <script src="js/utils.js" defer></script>
 </head>
 
 <body>
 <?php
-  require_once("views/header.php");
-  require_once("views/contenttable.php");
+  require_once("views/header_admin.php");
+  require_once("views/content_table.php");
   require_once("views/footer.php");
 ?>
 </body>

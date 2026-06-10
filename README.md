@@ -25,17 +25,18 @@ Fournir une interface poour enregistrer et modifier les données des champs des 
 - importer des données depuis des fichiers externes (CSV, powerbUI, etc... ?)
 - interface simple a prendre en main 
 - possibilité de retrouver facilement des données dans la table (recherche par nom de l'utilisateur, de son groupe, de son type de champ, etc...)
-- 
 
 
-## Identificationd des réponses
+## Identification des réponses
 ### agriculteurs 
 - Une page simple avec leur tableau personnel et des outils de modification des données de celui ci 
 - Une option d'enregistrement au format CSV ? 
 
 ### administrateurs
-- Une page d'observation, d'édition et de suppression des données des agriculeurs 
-- Une page d'observation, d'édition, de création et de suppression des groupes d'agriculteurs 
+- Une page d'observation, d'édition et de suppression des données des agriculeurs (pas de possibilité de changer la table ou d'ajouter des colonnes, juste la possibilité de changer les données des champs)
+
+- Une page d'observation, d'édition, de création et de suppression des groupes d'agriculteurs (juste la gestion de la table "groupe")
+
 - Une page d'ajout de nouveaux agriculteurs ainsi que leurs données : 
 Plusieurs options ici 
 -- création de l'agriculteurs 
@@ -49,10 +50,13 @@ Plusieurs options ici
 - Une page d'observation des anciennes version de la table en conservant les fichiers CSV avec les anciennes infos 
 Avec un bouton "sauvegarder la base actuelle" pour tout conserver 
 
+- Une page de manipulation du type de la table pour pouvoir y ajouter, modifier, supprimer des colonnes de la table actuellement présente sur le site 
+-- bien penser a faire confirmer l'utilisateur au moment de supprimer les colonnes 
+-- bien penser a ajouter une option pour sauvegarder le modèle actuel (pour qu'il soit récupérable dans le viewer au moins)
+
 
 
 # TODO
 - se renseigner sur les intégration powerbUI 
 - intégrer les options de groupes
 - intégrer les options de modification de la table 
-- 

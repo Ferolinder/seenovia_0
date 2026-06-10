@@ -16,12 +16,13 @@
 
   <script src="js/ajax.js" defer></script>
   <script src="js/agri.js" defer></script>
+  <script src="js/utils.js" defer></script>
 </head>
 
 <body class="page-agri">
 <?php
   require_once("views/header.php");
-  require_once("views/contentagri.php");
+  require_once("views/content_agri.php");
   require_once("views/footer.php");
 ?>
 </body>

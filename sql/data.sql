@@ -1,23 +1,3 @@
-DROP TABLE IF EXISTS field_options;
-DROP TABLE IF EXISTS crop_values;
-DROP TABLE IF EXISTS crop_records;
-DROP TABLE IF EXISTS spec_fields;
-DROP TABLE IF EXISTS crops;
-DROP TABLE IF EXISTS group_managers;
-DROP TABLE IF EXISTS users;
-DROP TABLE IF EXISTS groups;
-
-
-
-
--- ==========================================
--- GROUPES
--- ==========================================
-
-INSERT INTO groups (id, nom) VALUES
-(1, 'Nord'),
-(2, 'Sud');
-
 -- ==========================================
 -- UTILISATEURS
 -- ==========================================
@@ -29,23 +9,47 @@ INSERT INTO users (
     nom,
     prenom,
     telephone,
-    group_id,
     admin
 )
 VALUES
-(1, 'admin1@test.fr', 'abc', 'Martin', 'Jean', '0600000001', 1, TRUE),
-(2, 'admin2@test.fr', 'def', 'Bernard', 'Luc', '0600000002', 1, TRUE),
-(3, 'admin3@test.fr', 'ghi', 'Robert', 'Paul', '0600000003', 2, TRUE),
+(1, 'admin1@test.fr', 'abc', 'Martin', 'Jean', '0600000001', 1),
+(2, 'admin2@test.fr', 'def', 'Bernard', 'Luc', '0600000002', 1),
+(3, 'twig@hilda.fr', 'hil', 'Twig', 'Hilda', '0600000003', 1),
 
-(4, 'alice@test.fr', 'aaa', 'Moreau', 'Alice', '0600000004', 1, FALSE),
-(5, 'thomas@test.fr', 'bbb', 'Petit', 'Thomas', '0600000005', 1, FALSE),
-(6, 'julie@test.fr', 'ccc', 'Durand', 'Julie', '0600000006', 2, FALSE);
+(4, 'alice@test.fr', 'aaa', 'Moreau', 'Alice', '0600000004', 0),
+(5, 'thomas@test.fr', 'bbb', 'Petit', 'Thomas', '0600000005', 0),
+(6, 'julie@test.fr', 'ccc', 'Durand', 'Julie', '0600000006', 0);
+
+-- ==========================================
+-- GROUPES
+-- ==========================================
+
+INSERT INTO groups (id, nom) VALUES
+(1, 'Nord'),
+(2, 'Sud');
+
+INSERT INTO user_groups (
+    user_id,
+    group_id
+)
+VALUES
+(1,1), -- admin1 -> Nord
+(2,1), -- admin2 -> Nord
+(3,2), -- Twig -> Sud
+
+(4,1), -- Alice -> Nord
+(5,1), -- Thomas -> Nord
+(6,2); -- Julie -> Sud
 
 -- ==========================================
 -- RESPONSABLES DE GROUPES
 -- ==========================================
 
-INSERT INTO group_managers (group_id, user_id) VALUES
+INSERT INTO manager_groups (
+    group_id,
+    user_id
+)
+VALUES
 (1,1),
 (1,2),
 (2,3);
@@ -54,7 +58,11 @@ INSERT INTO group_managers (group_id, user_id) VALUES
 -- CULTURES
 -- ==========================================
 
-INSERT INTO crops (id, nom) VALUES
+INSERT INTO crops (
+    id,
+    nom
+)
+VALUES
 (1,'Blé'),
 (2,'Maïs'),
 (3,'Colza'),
@@ -76,50 +84,50 @@ INSERT INTO spec_fields (
     required
 )
 VALUES
-(1,'Surface','float','0','ha',1,TRUE,FALSE,TRUE),
-(2,'Engrais','float','0','kg',2,TRUE,FALSE,FALSE),
-(3,'Phyto','float','0','L',3,TRUE,FALSE,FALSE),
-(4,'Type Sol','selector',NULL,NULL,4,TRUE,FALSE,FALSE),
-(5,'Commentaire','text',NULL,NULL,5,TRUE,FALSE,FALSE);
+(1,'Surface','float','0','ha',1,1,0,1),
+(2,'Engrais','float','0','kg',2,1,0,0),
+(3,'Phyto','float','0','L',3,1,0,0),
+(4,'Type Sol','selector',NULL,NULL,4,1,0,0),
+(5,'Commentaire','text',NULL,NULL,5,1,0,0);
 
 -- ==========================================
--- OPTIONS DU SELECTOR "TYPE SOL"
+-- OPTIONS DU SELECTOR TYPE SOL
 -- ==========================================
 
 INSERT INTO field_options (
     field_id,
-    value,
+    option_value,
     is_default
 )
 VALUES
-(4,'Argileux',TRUE),
-(4,'Limoneux',FALSE),
-(4,'Sableux',FALSE);
+(4,'Argileux',1),
+(4,'Limoneux',0),
+(4,'Sableux',0);
 
 -- ==========================================
--- CULTURES D'ALICE
+-- ENREGISTREMENTS DE CULTURES
 -- ==========================================
 
-INSERT INTO crop_records (id,user_id,crop_id) VALUES
-(1,4,1),
-(2,4,2);
+INSERT INTO crop_records (
+    id,
+    user_id,
+    crop_id
+)
+VALUES
+(1,4,1), -- Alice / Blé
+(2,4,2), -- Alice / Maïs
+(3,5,1), -- Thomas / Blé
+(4,5,3), -- Thomas / Colza
+(5,6,4); -- Julie / Tournesol
 
 -- ==========================================
--- CULTURES DE THOMAS
--- ==========================================
-
-INSERT INTO crop_records (id,user_id,crop_id) VALUES
-(3,5,1),
-(4,5,3);
-
--- ==========================================
--- VALEURS D'ALICE - BLE
+-- ALICE - BLE
 -- ==========================================
 
 INSERT INTO crop_values (
     record_id,
     field_id,
-    value
+    field_value
 )
 VALUES
 (1,1,'12.5'),
@@ -129,13 +137,13 @@ VALUES
 (1,5,'Parcelle principale');
 
 -- ==========================================
--- VALEURS D'ALICE - MAIS
+-- ALICE - MAIS
 -- ==========================================
 
 INSERT INTO crop_values (
     record_id,
     field_id,
-    value
+    field_value
 )
 VALUES
 (2,1,'8'),
@@ -144,13 +152,13 @@ VALUES
 (2,4,'Limoneux');
 
 -- ==========================================
--- VALEURS DE THOMAS - BLE
+-- THOMAS - BLE
 -- ==========================================
 
 INSERT INTO crop_values (
     record_id,
     field_id,
-    value
+    field_value
 )
 VALUES
 (3,1,'20'),
@@ -159,16 +167,33 @@ VALUES
 (3,4,'Sableux');
 
 -- ==========================================
--- VALEURS DE THOMAS - COLZA
+-- THOMAS - COLZA
 -- ==========================================
 
 INSERT INTO crop_values (
     record_id,
     field_id,
-    value
+    field_value
 )
 VALUES
 (4,1,'6'),
 (4,2,'80'),
 (4,3,'12'),
 (4,4,'Argileux');
+
+-- ==========================================
+-- JULIE - TOURNESOL
+-- ==========================================
+
+INSERT INTO crop_values (
+    record_id,
+    field_id,
+    field_value
+)
+VALUES
+(5,1,'14'),
+(5,2,'95'),
+(5,3,'18'),
+(5,4,'Limoneux'),
+(5,5,'Parcelle proche de la rivière');
+

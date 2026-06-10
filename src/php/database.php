@@ -57,7 +57,7 @@ function dbConnectUser($dbb){
         $request =
             'SELECT id, admin
              FROM users
-             WHERE adresseMail = :mail
+             WHERE email = :mail
              AND mdp = :mdp
              LIMIT 1';
 
@@ -185,6 +185,54 @@ function dbDataAgri($dbb){
     }
 }
 
+function dbGroups($dbb) {
+    try {
+        $request = 'SELECT g.id, g.nom, u.id AS user_id, u.nom AS user_nom, u.prenom AS user_prenom, 
+                           CASE WHEN mg.user_id IS NOT NULL THEN 1 ELSE 0 END AS is_manager
+                    FROM groups g
+                    LEFT JOIN user_groups ug ON g.id = ug.group_id
+                    LEFT JOIN users u ON ug.user_id = u.id
+                    LEFT JOIN manager_groups mg ON g.id = mg.group_id AND u.id = mg.user_id
+                    ORDER BY g.nom, u.nom, u.prenom';
+        $statement = $dbb->prepare($request);
+        $statement->execute();
+        return $statement->fetchAll(PDO::FETCH_ASSOC);
+    }
+    catch (PDOException $e) {
+        return [
+            'error' => 'Erreur SQL : ' . $e->getMessage()
+        ];
+    }
+}
+
+function dbUsers($dbb) {
+    try {
+        $request = 'SELECT id, nom, prenom FROM users WHERE admin = false OR admin IS NULL ORDER BY nom, prenom';
+        $statement = $dbb->prepare($request);
+        $statement->execute();
+        return $statement->fetchAll(PDO::FETCH_ASSOC);
+    }
+    catch (PDOException $e) {
+        return [
+            'error' => 'Erreur SQL : ' . $e->getMessage()
+        ];
+    }
+}
+
+function dbManagers($dbb) {
+    try {
+        $request = 'SELECT id, nom, prenom FROM users WHERE admin = true ORDER BY nom, prenom';
+        $statement = $dbb->prepare($request);
+        $statement->execute();
+        return $statement->fetchAll(PDO::FETCH_ASSOC);
+    }
+    catch (PDOException $e) {
+        return [
+            'error' => 'Erreur SQL : ' . $e->getMessage()
+        ];
+    }
+}
+
 /* ------------------------------------------------------------------ */
 
 function dbDataAgriAll($dbb){
@@ -291,6 +339,25 @@ function dbDataAgriAll($dbb){
     }
 }
 
+function dbCreateGroup($dbb) {
+    try {
+        $groupName = $_POST['groupName'] ?? '';
+        if (!$groupName) {
+            return ['error' => 'Aucun nom de groupe fourni.'];
+        }
+        $checkStmt = $dbb->prepare('SELECT id FROM groups WHERE nom = :nom');
+        $checkStmt->execute([':nom' => $groupName]);
+        if ($checkStmt->fetch()) {
+            return ['error' => 'Un groupe avec ce nom existe déjà.'];
+        }
+        $insertStmt = $dbb->prepare('INSERT INTO groups (nom) VALUES (:nom)');
+        $insertStmt->execute([':nom' => $groupName]);
+        return ['success' => true, 'message' => 'Groupe créé avec succès.'];
+    }
+    catch (PDOException $e) {
+        return ['error' => 'Erreur SQL : ' . $e->getMessage()];
+    }
+}
 
 /* ------------------------------------------------------------------ */
 
@@ -521,80 +588,246 @@ function dbCreateAgriUsers($dbb) {
     }
 }
 
-/* ------------------------------------------------------------------ */ 
-
-function dbTableTemplate($dbb) {
+function dbAddUserToGroup($dbb, $_PUT) {
     try {
+        $groupId = $_PUT['groupId'] ?? '';
+        $userId = $_PUT["userId"] ?? '';
 
-        // Liste des cultures
-        $request = "
-            SELECT
-                id,
-                nom
-            FROM crops
-            ORDER BY id
-        ";
+        if (!$groupId || !$userId) {
+            return [
+                'error' => 'ID de groupe ou d\'utilisateur manquant.'
+            ];
+        }
 
-        $statement = $dbb->prepare($request);
-        $statement->execute();
-        $crops = $statement->fetchAll(PDO::FETCH_ASSOC);
+        $checkStmt = $dbb->prepare(
+            'SELECT 1
+             FROM user_groups
+             WHERE group_id = :group_id
+             AND user_id = :user_id'
+        );
 
+        $checkStmt->execute([
+            ':group_id' => $groupId,
+            ':user_id' => $userId
+        ]);
 
-        // Liste des utilisateurs
-        $request = "
-            SELECT
-                id,
-                nom,
-                prenom,
-                adresseMail,
-                telephone,
-                admin    
-            FROM users
-            ORDER BY nom, prenom
-        ";
+        if ($checkStmt->fetch()) {
+            return [
+                'error' => 'L\'utilisateur est déjà dans le groupe.'
+            ];
+        }
 
-        $statement = $dbb->prepare($request);
-        $statement->execute();
-        $users = $statement->fetchAll(PDO::FETCH_ASSOC);
+        $insertStmt = $dbb->prepare(
+            'INSERT INTO user_groups (
+                group_id,
+                user_id
+            )
+            VALUES (
+                :group_id,
+                :user_id
+            )'
+        );
 
-
-        // Toutes les données de production
-        $request = "
-            SELECT
-                s.id,
-                s.user_id,
-                s.crop_id,
-                s.surface,
-                s.engrais,
-                s.phyto,
-                s.A,
-                s.B,
-                s.C,
-                c.nom AS crop_name
-            FROM spec s
-            INNER JOIN crops c
-                ON c.id = s.crop_id
-            ORDER BY s.user_id, c.nom
-        ";
-
-        $statement = $dbb->prepare($request);
-        $statement->execute();
-        $specs = $statement->fetchAll(PDO::FETCH_ASSOC);
-
+        $insertStmt->execute([
+            ':group_id' => $groupId,
+            ':user_id' => $userId
+        ]);
 
         return [
             'success' => true,
-            'crops' => $crops,
-            'users' => $users,
-            'specs' => $specs
+            'message' => 'Utilisateur ajouté au groupe.'
         ];
     }
     catch (PDOException $e) {
         return [
-            'success' => false,
             'error' => 'Erreur SQL : ' . $e->getMessage()
         ];
     }
 }
+
+function dbRemoveUserFromGroup($dbb) {
+    try {
+        $groupId = $_POST['groupId'] ?? '';
+        $userId = $_POST['userId'] ?? '';
+        if (!$groupId || !$userId) {
+            return ['error' => 'ID de groupe ou d\'utilisateur manquant.'];
+        }
+        $deleteStmt = $dbb->prepare('DELETE FROM users_groups WHERE group_id = :group_id AND user_id = :user_id');
+        $deleteStmt->execute([
+            ':group_id' => $groupId,
+            ':user_id' => $userId
+        ]);
+        return ['success' => true, 'message' => 'Utilisateur retiré du groupe avec succès.'];
+    }
+    catch (PDOException $e) {
+        return ['error' => 'Erreur SQL : ' . $e->getMessage()];
+    }
+}
+
+function dbAddManagerToGroup($dbb, $_PUT) {
+    try {
+        $groupId = $_PUT['groupId'] ?? '';
+        $userId = $_PUT['userId'] ?? '';
+        if (!$groupId || !$userId) {
+            return ['error' => 'ID de groupe ou d\'utilisateur manquant.'];
+        }
+        $checkStmt = $dbb->prepare('SELECT id FROM manager_groups WHERE group_id
+                = :group_id AND user_id = :user_id');
+        $checkStmt->execute([
+            ':group_id' => $groupId,
+            ':user_id' => $userId
+        ]); 
+        if ($checkStmt->fetch()) {
+            return ['error' => 'L\'utilisateur est déjà manager de ce groupe.'];
+        }
+        $insertStmt = $dbb->prepare('INSERT INTO manager_groups (group_id, user_id) VALUES (:group_id, :user_id)');
+        $insertStmt->execute([
+            ':group_id' => $groupId,
+            ':user_id' => $userId
+        ]);
+        return ['success' => true, 'message' => 'Utilisateur ajouté en tant que manager du groupe avec succès.'];
+    }
+    catch (PDOException $e) {
+        return ['error' => 'Erreur SQL : ' . $e->getMessage()];
+    }
+}
+
+function dbRemoveManagerFromGroup($dbb) {
+    try {
+        $groupId = $_POST['groupId'] ?? '';
+        $userId = $_POST['userId'] ?? '';
+        if (!$groupId || !$userId) {
+            return ['error' => 'ID de groupe ou d\'utilisateur manquant.'];
+        }
+        $deleteStmt = $dbb->prepare('DELETE FROM manager_groups WHERE group_id = :group_id AND user_id = :user_id');
+        $deleteStmt->execute([
+            ':group_id' => $groupId,
+            ':user_id' => $userId
+        ]);
+        return ['success' => true, 'message' => 'Utilisateur retiré du groupe de managers avec succès.'];
+    }
+    catch (PDOException $e) {
+        return ['error' => 'Erreur SQL : ' . $e->getMessage()];
+    }
+}
+
+function dbDeleteGroup($dbb) {
+    try {
+        $groupId = $_POST['groupId'] ?? '';
+        if (!$groupId) {
+            return ['error' => 'ID de groupe manquant.'];
+        }
+        $deleteUsersGroupsStmt = $dbb->prepare('DELETE FROM users_groups WHERE group_id = :group_id');
+        $deleteUsersGroupsStmt->execute([':group_id' => $groupId]);
+        $deleteManagerGroupsStmt = $dbb->prepare('DELETE FROM manager_groups WHERE group_id = :group_id');
+        $deleteManagerGroupsStmt->execute([':group_id' => $groupId]);
+        $deleteGroupStmt = $dbb->prepare('DELETE FROM groups WHERE id = :group_id');
+        $deleteGroupStmt->execute([':group_id' => $groupId]);
+        return ['success' => true, 'message' => 'Groupe supprimé avec succès.'];
+    }
+    catch (PDOException $e) {
+        return ['error' => 'Erreur SQL : ' . $e->getMessage()];
+    }
+}
+
+function dbChangeGroupName($dbb) {
+    try {
+        $groupId = $_POST['groupId'] ?? '';
+        $newName = $_POST['newName'] ?? '';
+        if (!$groupId || !$newName) {
+            return ['error' => 'ID de groupe ou nouveau nom manquant.'];
+        }
+        $checkStmt = $dbb->prepare('SELECT id FROM groups WHERE nom = :nom');
+        $checkStmt->execute([':nom' => $newName]);
+        if ($checkStmt->fetch()) {
+            return ['error' => 'Un groupe avec ce nom existe déjà.'];
+        }
+        $updateStmt = $dbb->prepare('UPDATE groups SET nom = :new_name WHERE id = :group_id');
+        $updateStmt->execute([
+            ':new_name' => $newName,
+            ':group_id' => $groupId
+        ]);
+        return ['success' => true, 'message' => 'Nom du groupe mis à jour avec succès.'];
+    }
+    catch (PDOException $e) {
+        return ['error' => 'Erreur SQL : ' . $e->getMessage()];
+    }
+}
+
+/* ------------------------------------------------------------------ */ 
+
+// function dbTableTemplate($dbb) {
+//     try {
+
+//         // Liste des cultures
+//         $request = "
+//             SELECT
+//                 id,
+//                 nom
+//             FROM crops
+//             ORDER BY id
+//         ";
+
+//         $statement = $dbb->prepare($request);
+//         $statement->execute();
+//         $crops = $statement->fetchAll(PDO::FETCH_ASSOC);
+
+
+//         // Liste des utilisateurs
+//         $request = "
+//             SELECT
+//                 id,
+//                 nom,
+//                 prenom,
+//                 adresseMail,
+//                 telephone,
+//                 admin    
+//             FROM users
+//             ORDER BY nom, prenom
+//         ";
+
+//         $statement = $dbb->prepare($request);
+//         $statement->execute();
+//         $users = $statement->fetchAll(PDO::FETCH_ASSOC);
+
+
+//         // Toutes les données de production
+//         $request = "
+//             SELECT
+//                 s.id,
+//                 s.user_id,
+//                 s.crop_id,
+//                 s.surface,
+//                 s.engrais,
+//                 s.phyto,
+//                 s.A,
+//                 s.B,
+//                 s.C,
+//                 c.nom AS crop_name
+//             FROM spec s
+//             INNER JOIN crops c
+//                 ON c.id = s.crop_id
+//             ORDER BY s.user_id, c.nom
+//         ";
+
+//         $statement = $dbb->prepare($request);
+//         $statement->execute();
+//         $specs = $statement->fetchAll(PDO::FETCH_ASSOC);
+
+
+//         return [
+//             'success' => true,
+//             'crops' => $crops,
+//             'users' => $users,
+//             'specs' => $specs
+//         ];
+//     }
+//     catch (PDOException $e) {
+//         return [
+//             'success' => false,
+//             'error' => 'Erreur SQL : ' . $e->getMessage()
+//         ];
+//     }
+// }
 
 ?>

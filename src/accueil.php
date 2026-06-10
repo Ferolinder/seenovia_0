@@ -16,13 +16,14 @@
 
   <script src="js/ajax.js" defer></script>
   <script src="js/acceuil.js" defer></script>
+  <script src="js/utils.js" defer></script>
 </head>
 
 <body id="acceuil">
 
 <?php
   require_once("views/header.php");
-  require_once("views/contentaccueil.php");
+  require_once("views/content_accueil.php");
   require_once("views/footer.php");
 ?>
 

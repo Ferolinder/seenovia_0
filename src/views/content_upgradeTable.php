@@ -1,22 +1,9 @@
-<section id="seenoviaPage">
-  <section id="GreetingSection" class="section">
-    <h1 id="Greeting" class="greeting">Bonjour admin</h1>
-  </section>
 
-  <br>
-
-  </section>
-
-    <section id="seenoviaControls" class="section agri-controls">
-      <button id="modifyAllBtn" class="agri-button">Modifier</button>
-      <button id="saveAllBtn" class="agri-button agri-button-secondary" disabled>Enregistrer</button>
-      <!-- <button id="downloadCsvBtn" class="agri-button agri-button-secondary">Télécharger CSV</button> -->
       <button id="createAgriUserBtn" class="agri-button" style="margin-left: auto;">Créer un compte agri</button>
-      <button id="Modifier tableau" class="agri-button" style="margin-left: auto;" onclick="setTablePage()">Modifier le tableau</button>
-      <div id="seenoviaFeedback" class="agri-feedback"></div>
-    </section>
+      
 
-    <!-- Modal for creating agri user -->
+
+<!-- Modal for creating agri user -->
     <div id="createAgriUserModal" class="modal-overlay">
       <div class="modal-content">
         <button class="modal-close">&times;</button>
@@ -69,10 +56,3 @@
         </div>
       </div>
     </div>
-
-    <br>
-
-    <section id="seenoviaListSection" class="section">
-      <div id="seenoviaList" class="seenovia-list"></div>
-    </section>
-</section>

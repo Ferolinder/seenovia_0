@@ -25,6 +25,17 @@ if (!is_array($jsonInput)) {
     $jsonInput = [];
 }
 
+// Make PUT payload available like PHP superglobals for AJAX-style requests
+$_PUT = [];
+if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
+    parse_str($rawInput, $parsedInput);
+    if (!empty($parsedInput)) {
+        $_PUT = $parsedInput;
+    } else {
+        $_PUT = $jsonInput;
+    }
+}
+
 /*
     REQUEST METHOD
 */
@@ -64,7 +75,7 @@ if (empty($requestRessource)) {
     exit();
 }
 
-switch($req){.
+switch($req){
     // Getting data from the database and sending it to the client
     case "GET" : {
         switch($requestRessource){
@@ -90,6 +101,31 @@ switch($req){.
             }
             case "table_template" : {
                 $result = dbTableTemplate($db);
+                echo json_encode($result);
+                break;
+            }
+            case "users" : {
+                $result = dbUsers($db);
+                echo json_encode($result);
+                break;
+            }
+            case "managers" : {
+                $result = dbManagers($db);
+                echo json_encode($result);
+                break;
+            }
+            case "groups" : {
+                $result = dbGroups($db);
+                echo json_encode($result);
+                break;
+            }
+            case "user_search" : {          // looking for a users with a research string (can be his name or surname or email)
+                $result = dbUserSearch($db);
+                echo json_encode($result);
+                break;
+            }
+            case "group_search" : {         // looking for a group with a research string (can be the group name)
+                $result = dbGroupSearch($db);
                 echo json_encode($result);
                 break;
             }
@@ -126,6 +162,11 @@ switch($req){.
                 echo json_encode($result);
                 break;
             }
+            case "create_group" : {
+                $result = dbCreateGroup($db);
+                echo json_encode($result);
+                break;
+            }
             default : {
                 echo json_encode([
                     'error' => 'Ressource POST non définie : ' . $requestRessource
@@ -137,6 +178,7 @@ switch($req){.
     // Receiving data from the client and processing it (e.g. updating the database)
     case "PUT" : {
         $_PUT = $jsonInput;
+        // echo json_encode($_PUT);
         switch($requestRessource){
             case "datas" : {
                 echo json_encode([
@@ -145,6 +187,37 @@ switch($req){.
                 ]);
                 break;
             }
+            case "add_user_to_group" : {
+                $result = dbAddUserToGroup($db, $_PUT);
+                echo json_encode($result);
+                break;
+            }
+            case "add_manager_to_group" : {
+                $result = dbAddManagerToGroup($db, $_PUT);
+                echo json_encode($result);
+                break;
+            }
+            case "remove_user_from_group" : {
+                $result = dbRemoveUserFromGroup($db);
+                echo json_encode($result);
+                break;
+            }
+            case "remove_manager_from_group" : {
+                $result = dbRemoveManagerFromGroup($db);
+                echo json_encode($result);
+                break;
+            }
+            case "delete_group" : {
+                $result = dbDeleteGroup($db);
+                echo json_encode($result);
+                break;
+            }
+            case "change_group_name" : {
+                $result = dbChangeGroupName($db);
+                echo json_encode($result);
+                break;
+            }
+
             default : {
                 echo json_encode([
                     'error' => 'Ressource PUT non définie : ' . $requestRessource

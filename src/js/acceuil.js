@@ -78,18 +78,7 @@ function openPageAgri(data) {
 }
 
 function openPageSeenovia() {
-  window.location.href = 'seenovia.php';
-}
-
-function printf(data) {
-  // ajax_req(
-  //   'GET',
-  //   'php/request.php/test/',
-  //   test,
-  //   '&tab=' + 'crops'
-  // );
-
-  console.log("Response received:", data);
+  window.location.href = `datas.php`;
 }
 
 function copyText(text) {
